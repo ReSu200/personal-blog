@@ -26,7 +26,12 @@ export default async function AboutPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <Card className="overflow-hidden rounded-3xl">
-        <HeroCover image={settings.heroBackground} position={settings.heroPosition} className="h-36 sm:h-44" />
+        <HeroCover
+          image={settings.heroBackground}
+          position={settings.heroPosition}
+          className="h-36 sm:h-44"
+          priority
+        />
         <div className="px-6 pb-8 sm:px-10">
           <div className="relative z-10 -mt-14 h-24 w-24 overflow-hidden rounded-full border-4 border-card bg-card shadow-lg ring-1 ring-border/50">
             <UserAvatar

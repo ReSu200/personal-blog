@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { after } from 'next/server';
@@ -106,15 +107,15 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
           </Link>
 
           {cover && (
-            <div className="mt-5 overflow-hidden rounded-2xl bg-muted">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+            <div className="relative mt-5 aspect-[21/9] overflow-hidden rounded-2xl bg-muted">
+              <Image
                 src={cover}
                 alt={post.title}
-                fetchPriority="high"
-                decoding="async"
+                fill
+                priority
+                sizes="(max-width: 760px) 100vw, 760px"
                 style={coverPosition ? { objectPosition: coverPosition } : undefined}
-                className="aspect-[21/9] w-full object-cover"
+                className="object-cover"
               />
             </div>
           )}

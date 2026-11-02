@@ -1,4 +1,5 @@
 ﻿import Link from 'next/link';
+import Image from 'next/image';
 import { CalendarDays, Eye, Pin } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import type { PostListItem } from '@/lib/queries';
@@ -39,15 +40,14 @@ export function PostCard({
     <article className="animate-fade-in-up">
       <Link href={`/posts/${post.slug}`} className={`${cardBase} flex flex-col gap-4 p-4 sm:flex-row sm:gap-6 sm:p-5`}>
         {cover ? (
-          <div className="h-40 w-full shrink-0 overflow-hidden rounded-xl bg-muted sm:h-[132px] sm:w-48 lg:w-56">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <div className="relative h-40 w-full shrink-0 overflow-hidden rounded-xl bg-muted sm:h-[132px] sm:w-48 lg:w-56">
+            <Image
               src={cover}
               alt={post.title}
-              loading="lazy"
-              decoding="async"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 192px, 224px"
               style={position ? { objectPosition: position } : undefined}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
           </div>
         ) : null}
@@ -111,14 +111,13 @@ export function PostGridCard({
       <Link href={`/posts/${post.slug}`} className={`${cardBase} flex h-full flex-col`}>
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted">
           {cover ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={cover}
               alt={post.title}
-              loading="lazy"
-              decoding="async"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1536px) 50vw, 33vw"
               style={position ? { objectPosition: position } : undefined}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
             />
           ) : (
             <div className="hero-canvas flex h-full w-full items-center justify-center">
@@ -181,13 +180,13 @@ export function FeaturedPostCard({
     >
       {cover ? (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={cover}
             alt={post.title}
-            decoding="async"
+            fill
+            sizes="(max-width: 640px) 100vw, 50vw"
             style={position ? { objectPosition: position } : undefined}
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-slate-950/35 to-slate-950/10" />
         </>

@@ -1,4 +1,5 @@
 ﻿import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -21,16 +22,16 @@ export function HeroBanner({ siteName, siteDescription, backgroundImage, backgro
       {/* 背景层：后台设置的首页背景板图片，未设置时使用薄荷色画布 */}
       <div aria-hidden className="absolute inset-0">
         {hasImage ? (
-          // 用 img 而非 CSS 背景，浏览器才能尽早发现并给予 LCP 高优先级
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          // 首屏 LCP 图：priority 让浏览器尽早发现并预加载，fill 按容器尺寸自适应
+          <Image
             src={backgroundImage!}
             alt=""
             aria-hidden
-            fetchPriority="high"
-            decoding="async"
+            fill
+            priority
+            sizes="100vw"
             style={backgroundPosition ? { objectPosition: backgroundPosition } : undefined}
-            className="absolute inset-0 h-full w-full animate-hero-zoom object-cover object-center"
+            className="animate-hero-zoom object-cover object-center"
           />
         ) : (
           <div className="hero-canvas absolute inset-0" />

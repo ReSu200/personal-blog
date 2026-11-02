@@ -1,4 +1,5 @@
-﻿import { cn } from '@/lib/utils';
+﻿import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 /**
  * 复用首页背景板图片（作者卡 / 关于页顶部横幅）。
@@ -9,11 +10,14 @@ export function HeroCover({
   image,
   position,
   className,
+  priority = false,
 }: {
   image: string | null;
   /** 背景板裁切焦点，对应 object-position */
   position?: string;
   className?: string;
+  /** 作为首屏横幅时置为 true，让浏览器优先加载 */
+  priority?: boolean;
 }) {
   if (!image) {
     return <div className={cn('hero-canvas', className)} />;
@@ -21,14 +25,15 @@ export function HeroCover({
 
   return (
     <div className={cn('relative isolate overflow-hidden bg-secondary/60', className)}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={image}
         alt=""
         aria-hidden
-        decoding="async"
+        fill
+        priority={priority}
+        sizes="(max-width: 640px) 100vw, 480px"
         style={position ? { objectPosition: position } : undefined}
-        className="absolute inset-0 h-full w-full scale-105 object-cover opacity-80 blur-[1.5px] dark:opacity-65"
+        className="scale-105 object-cover opacity-80 blur-[1.5px] dark:opacity-65"
       />
       <div
         aria-hidden
