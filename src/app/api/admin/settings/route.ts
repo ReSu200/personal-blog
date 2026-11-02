@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { settings } from '@/db/schema';
 import { guardAdmin } from '@/lib/guard';
+import { CACHE_TAGS } from '@/lib/queries';
 
 const schema = z.object({
   siteName: z.string().trim().max(100).optional(),
@@ -42,5 +44,6 @@ export async function PUT(req: Request) {
     await db.insert(settings).values(values);
   }
 
+  revalidateTag(CACHE_TAGS.settings, 'max');
   return NextResponse.json({ ok: true });
 }

@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { db } from '@/db';
 import { posts } from '@/db/schema';
 import { guardAdmin } from '@/lib/guard';
+import { CACHE_TAGS } from '@/lib/queries';
 import { parseTagInput, syncPostTags, uniquePostSlug } from '@/lib/post-service';
 
 const schema = z.object({
@@ -62,5 +64,8 @@ export async function POST(req: Request) {
   const postId = inserted[0].id;
   await syncPostTags(postId, parseTagInput(data.tags));
 
+  // 文章会影响分类/标签聚合与站点统计缓存
+  revalidateTag(CACHE_TAGS.taxonomy, 'max');
+  revalidateTag(CACHE_TAGS.stats, 'max');
   return NextResponse.json({ ok: true, id: postId, slug });
 }

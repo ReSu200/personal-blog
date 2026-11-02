@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import fs from 'node:fs/promises';
@@ -6,6 +7,7 @@ import path from 'node:path';
 import { db } from '@/db';
 import { songs } from '@/db/schema';
 import { guardAdmin } from '@/lib/guard';
+import { CACHE_TAGS } from '@/lib/queries';
 
 export const runtime = 'nodejs';
 
@@ -57,6 +59,7 @@ export async function PATCH(
     })
     .where(eq(songs.id, id));
 
+  revalidateTag(CACHE_TAGS.music, 'max');
   return NextResponse.json({ ok: true });
 }
 
@@ -89,5 +92,7 @@ export async function DELETE(
   }
 
   await db.delete(songs).where(eq(songs.id, id));
+  revalidateTag(CACHE_TAGS.music, 'max');
+  revalidateTag(CACHE_TAGS.stats, 'max');
   return NextResponse.json({ ok: true });
 }

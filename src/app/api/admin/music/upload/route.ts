@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { db } from '@/db';
 import { songs } from '@/db/schema';
 import { guardAdmin } from '@/lib/guard';
+import { CACHE_TAGS } from '@/lib/queries';
 
 export const runtime = 'nodejs';
 
@@ -76,5 +78,7 @@ export async function POST(req: Request) {
     })
     .returning({ id: songs.id });
 
+  revalidateTag(CACHE_TAGS.music, 'max');
+  revalidateTag(CACHE_TAGS.stats, 'max');
   return NextResponse.json({ ok: true, id: inserted[0].id, filePath: `/music/${fileName}` });
 }

@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { comments, posts, postTags } from '@/db/schema';
 import { guardAdmin } from '@/lib/guard';
+import { CACHE_TAGS } from '@/lib/queries';
 import { parseTagInput, syncPostTags, uniquePostSlug } from '@/lib/post-service';
 
 const schema = z.object({
@@ -79,6 +81,8 @@ export async function PUT(
 
   await syncPostTags(id, parseTagInput(data.tags));
 
+  revalidateTag(CACHE_TAGS.taxonomy, 'max');
+  revalidateTag(CACHE_TAGS.stats, 'max');
   return NextResponse.json({ ok: true, id, slug });
 }
 
@@ -98,5 +102,8 @@ export async function DELETE(
   await db.delete(postTags).where(eq(postTags.postId, id));
   await db.delete(comments).where(eq(comments.postId, id));
   await db.delete(posts).where(eq(posts.id, id));
+
+  revalidateTag(CACHE_TAGS.taxonomy, 'max');
+  revalidateTag(CACHE_TAGS.stats, 'max');
   return NextResponse.json({ ok: true });
 }

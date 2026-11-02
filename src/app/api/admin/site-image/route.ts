@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -6,6 +7,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { settings } from '@/db/schema';
 import { guardAdmin } from '@/lib/guard';
+import { CACHE_TAGS } from '@/lib/queries';
 
 export const runtime = 'nodejs';
 
@@ -113,6 +115,7 @@ export async function POST(req: Request) {
   await persist({ [KINDS[kind].column]: url }, row);
   await removeUploadedFile(previous);
 
+  revalidateTag(CACHE_TAGS.settings, 'max');
   return NextResponse.json({ ok: true, url });
 }
 
@@ -136,6 +139,7 @@ export async function PUT(req: Request) {
   const position = `${x}% ${y}%`;
   await persist({ [KINDS[kind].positionColumn]: position });
 
+  revalidateTag(CACHE_TAGS.settings, 'max');
   return NextResponse.json({ ok: true, position });
 }
 
@@ -157,5 +161,6 @@ export async function DELETE(req: Request) {
   await persist(patch, row);
   await removeUploadedFile(previous);
 
+  revalidateTag(CACHE_TAGS.settings, 'max');
   return NextResponse.json({ ok: true, url: null });
 }

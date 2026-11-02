@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { categories, posts, postTags, tags } from '@/db/schema';
 import { guardAdmin } from '@/lib/guard';
 import { slugify } from '@/lib/utils';
+import { CACHE_TAGS } from '@/lib/queries';
 
 const schema = z.object({
   type: z.enum(['category', 'tag']),
@@ -33,6 +35,7 @@ export async function POST(req: Request) {
   const slug = slugExisting[0] ? `${baseSlug}-${Date.now().toString().slice(-4)}` : baseSlug;
 
   await db.insert(table).values({ name, slug });
+  revalidateTag(CACHE_TAGS.taxonomy, 'max');
   return NextResponse.json({ ok: true });
 }
 
@@ -56,5 +59,7 @@ export async function DELETE(req: Request) {
     await db.delete(tags).where(eq(tags.id, id));
   }
 
+  revalidateTag(CACHE_TAGS.taxonomy, 'max');
+  revalidateTag(CACHE_TAGS.stats, 'max');
   return NextResponse.json({ ok: true });
 }

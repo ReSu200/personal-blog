@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { after } from 'next/server';
 import { ArrowLeft, ArrowRight, CalendarDays, Eye, Timer } from 'lucide-react';
 import { Markdown } from '@/components/markdown';
 import { AuthorCard } from '@/components/author-card';
@@ -42,13 +43,14 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
 
   const post = detail.post;
 
-  // 阅读计数只是副作用，与页面数据并行执行，不额外阻塞渲染
+  // 阅读计数只是副作用，放到响应结束后写库，不占用首屏渲染时间
+  after(() => incrementView(post.id));
+
   const [comments, session, adjacent, settings] = await Promise.all([
     getApprovedComments(post.id),
     getSession(),
     getAdjacentPosts({ id: post.id, publishedAt: post.publishedAt }),
     getSettings(),
-    incrementView(post.id),
   ]);
   const toc = extractToc(post.content);
 

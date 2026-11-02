@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { eq, max } from 'drizzle-orm';
 import { db } from '@/db';
 import { friendLinks } from '@/db/schema';
 import { guardAdmin } from '@/lib/guard';
+import { CACHE_TAGS } from '@/lib/queries';
 
 /** 友链地址支持 http 与 https 两种协议 */
 const webUrl = z
@@ -64,5 +66,6 @@ export async function POST(req: Request) {
     })
     .returning({ id: friendLinks.id });
 
+  revalidateTag(CACHE_TAGS.links, 'max');
   return NextResponse.json({ ok: true, id: inserted[0].id });
 }

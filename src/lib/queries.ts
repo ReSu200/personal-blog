@@ -1,8 +1,18 @@
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import { and, asc, count, desc, eq, gt, inArray, like, lt, or, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { categories, comments, friendLinks, posts, postTags, settings, songs, tags, users } from '@/db/schema';
 import { DEFAULT_ABOUT_SITE } from '@/lib/utils';
+
+/** 跨请求缓存标签：后台写操作完成后调用 revalidateTag 失效对应缓存 */
+export const CACHE_TAGS = {
+  settings: 'site-settings',
+  taxonomy: 'taxonomy',
+  links: 'friend-links',
+  music: 'music',
+  stats: 'site-stats',
+} as const;
 
 export type SettingsData = {
   id: number;
@@ -50,8 +60,7 @@ const fallbackSettings: SettingsData = {
   musicVolume: 0.5,
 };
 
-// 同一请求内 layout / page / 侧栏都会读取设置，用 cache 去重，避免重复查询
-export const getSettings = cache(async (): Promise<SettingsData> => {
+async function loadSettings(): Promise<SettingsData> {
   try {
     // 作者信息已合并到管理员个人资料，站点设置只保留站点级配置
     const [rows, admins] = await Promise.all([
@@ -122,7 +131,17 @@ export const getSettings = cache(async (): Promise<SettingsData> => {
   } catch {
     return fallbackSettings;
   }
-});
+}
+
+// 站点全局配置：请求内用 cache 去重，跨请求用 unstable_cache；
+// 后台保存站点设置 / 个人资料后调用 revalidateTag(CACHE_TAGS.settings) 立即失效
+export const getSettings = cache(
+  unstable_cache(loadSettings, ['site-settings'], {
+    tags: [CACHE_TAGS.settings],
+    // 访问量等字段会持续变化，保留 30 秒兜底刷新
+    revalidate: 30,
+  }),
+);
 
 export type TagItem = { name: string; slug: string };
 export type PostListItem = {
@@ -354,38 +373,56 @@ export async function getUserById(id: number) {
   return rows[0] ?? null;
 }
 
-// 侧栏与列表页会同时调用，cache 避免同一请求重复聚合
-export const getTagsWithCount = cache(async () => {
-  const rows = await db
-    .select({ name: tags.name, slug: tags.slug, total: count(postTags.postId) })
-    .from(tags)
-    .leftJoin(postTags, eq(postTags.tagId, tags.id))
-    .groupBy(tags.id, tags.name, tags.slug);
-  return rows.map((r) => ({ ...r, total: Number(r.total) })).sort((a, b) => b.total - a.total);
-});
+// 标签聚合低频变化：请求内去重 + 跨请求缓存，后台增删标签或文章后失效
+export const getTagsWithCount = cache(
+  unstable_cache(
+    async () => {
+      const rows = await db
+        .select({ name: tags.name, slug: tags.slug, total: count(postTags.postId) })
+        .from(tags)
+        .leftJoin(postTags, eq(postTags.tagId, tags.id))
+        .groupBy(tags.id, tags.name, tags.slug);
+      return rows.map((r) => ({ ...r, total: Number(r.total) })).sort((a, b) => b.total - a.total);
+    },
+    ['tags-with-count'],
+    { tags: [CACHE_TAGS.taxonomy], revalidate: 60 },
+  ),
+);
 
-export const getCategoriesWithCount = cache(async () => {
-  const rows = await db
-    .select({ name: categories.name, slug: categories.slug, total: count(posts.id) })
-    .from(categories)
-    .leftJoin(posts, and(eq(posts.categoryId, categories.id), eq(posts.status, 'published')))
-    .groupBy(categories.id, categories.name, categories.slug)
-    .orderBy(asc(categories.id));
-  return rows.map((r) => ({ ...r, total: Number(r.total) }));
-});
+export const getCategoriesWithCount = cache(
+  unstable_cache(
+    async () => {
+      const rows = await db
+        .select({ name: categories.name, slug: categories.slug, total: count(posts.id) })
+        .from(categories)
+        .leftJoin(posts, and(eq(posts.categoryId, categories.id), eq(posts.status, 'published')))
+        .groupBy(categories.id, categories.name, categories.slug)
+        .orderBy(asc(categories.id));
+      return rows.map((r) => ({ ...r, total: Number(r.total) }));
+    },
+    ['categories-with-count'],
+    { tags: [CACHE_TAGS.taxonomy], revalidate: 60 },
+  ),
+);
 
-export const getSiteStats = cache(async () => {
-  const [postRows, commentRows, songRows] = await Promise.all([
-    db.select({ value: count() }).from(posts).where(eq(posts.status, 'published')),
-    db.select({ value: count() }).from(comments).where(eq(comments.status, 'approved')),
-    db.select({ value: count() }).from(songs),
-  ]);
-  return {
-    posts: Number(postRows[0]?.value ?? 0),
-    comments: Number(commentRows[0]?.value ?? 0),
-    songs: Number(songRows[0]?.value ?? 0),
-  };
-});
+export const getSiteStats = cache(
+  unstable_cache(
+    async () => {
+      const [postRows, commentRows, songRows] = await Promise.all([
+        db.select({ value: count() }).from(posts).where(eq(posts.status, 'published')),
+        db.select({ value: count() }).from(comments).where(eq(comments.status, 'approved')),
+        db.select({ value: count() }).from(songs),
+      ]);
+      return {
+        posts: Number(postRows[0]?.value ?? 0),
+        comments: Number(commentRows[0]?.value ?? 0),
+        songs: Number(songRows[0]?.value ?? 0),
+      };
+    },
+    ['site-stats'],
+    { tags: [CACHE_TAGS.stats], revalidate: 60 },
+  ),
+);
 
 /* ============ 后台查询 ============ */
 
@@ -467,28 +504,39 @@ export async function adminDashboard() {
   };
 }
 
-export async function listSongs() {
-  return db.select().from(songs).orderBy(asc(songs.sortOrder), asc(songs.id));
-}
+// 歌曲列表每个页面都会由布局读取：跨请求缓存，后台增删改歌曲后失效
+export const listSongs = cache(
+  unstable_cache(
+    async () => db.select().from(songs).orderBy(asc(songs.sortOrder), asc(songs.id)),
+    ['list-songs'],
+    { tags: [CACHE_TAGS.music], revalidate: 60 },
+  ),
+);
 
 /** 后台友链列表：包含隐藏项 */
 export async function listFriendLinks() {
   return db.select().from(friendLinks).orderBy(asc(friendLinks.sortOrder), asc(friendLinks.id));
 }
 
-// 前台友链只展示可见项，cache 避免同一请求重复查询
-export const listVisibleFriendLinks = cache(async () => {
-  return db
-    .select({
-      id: friendLinks.id,
-      name: friendLinks.name,
-      url: friendLinks.url,
-      description: friendLinks.description,
-    })
-    .from(friendLinks)
-    .where(eq(friendLinks.isVisible, 1))
-    .orderBy(asc(friendLinks.sortOrder), asc(friendLinks.id));
-});
+// 前台友链只展示可见项：请求内去重 + 跨请求缓存，后台改友链后失效
+export const listVisibleFriendLinks = cache(
+  unstable_cache(
+    async () => {
+      return db
+        .select({
+          id: friendLinks.id,
+          name: friendLinks.name,
+          url: friendLinks.url,
+          description: friendLinks.description,
+        })
+        .from(friendLinks)
+        .where(eq(friendLinks.isVisible, 1))
+        .orderBy(asc(friendLinks.sortOrder), asc(friendLinks.id));
+    },
+    ['visible-friend-links'],
+    { tags: [CACHE_TAGS.links], revalidate: 60 },
+  ),
+);
 
 export async function listAllCategories() {
   return db.select().from(categories).orderBy(asc(categories.id));

@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { getSession, hashPassword, setSessionCookie, verifyPassword } from '@/lib/auth';
+import { CACHE_TAGS } from '@/lib/queries';
 
 const schema = z.object({
   username: z
@@ -79,5 +81,6 @@ export async function PUT(req: Request) {
     await setSessionCookie({ id: user.id, username: nextUsername, role: user.role });
   }
 
+  revalidateTag(CACHE_TAGS.settings, 'max');
   return NextResponse.json({ ok: true, usernameChanged: nextUsername !== user.username });
 }

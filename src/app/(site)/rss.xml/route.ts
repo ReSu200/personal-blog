@@ -3,7 +3,8 @@ import { db } from '@/db';
 import { posts } from '@/db/schema';
 import { getSettings } from '@/lib/queries';
 
-export const dynamic = 'force-dynamic';
+// RSS 内容变化频率低，交给路由缓存 5 分钟，并允许 CDN 短暂复用
+export const revalidate = 300;
 
 function escapeXml(value: string) {
   return value
@@ -59,7 +60,7 @@ ${items}
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/rss+xml; charset=utf-8',
-      'Cache-Control': 'no-store',
+      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
     },
   });
 }

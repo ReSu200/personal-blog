@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/db';
 import { friendLinks } from '@/db/schema';
 import { guardAdmin } from '@/lib/guard';
+import { CACHE_TAGS } from '@/lib/queries';
 
 const webUrl = z
   .string()
@@ -79,6 +81,7 @@ export async function PATCH(
     })
     .where(eq(friendLinks.id, id));
 
+  revalidateTag(CACHE_TAGS.links, 'max');
   return NextResponse.json({ ok: true });
 }
 
@@ -101,5 +104,6 @@ export async function DELETE(
   }
 
   await db.delete(friendLinks).where(eq(friendLinks.id, id));
+  revalidateTag(CACHE_TAGS.links, 'max');
   return NextResponse.json({ ok: true });
 }
