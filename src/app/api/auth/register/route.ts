@@ -15,6 +15,7 @@ const schema = z
       .regex(/^[\p{L}\p{N}_-]+$/u, '用户名只能包含字母、数字、下划线或短横线'),
     password: z.string().min(6, '密码至少 6 位').max(32, '密码最多 32 位'),
     confirmPassword: z.string().min(1, '请再次输入密码'),
+    displayName: z.string().trim().min(2, '昵称至少 2 个字符').max(20, '昵称最多 20 个字符').optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: '两次输入的密码不一致',
@@ -28,7 +29,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? '参数不合法' }, { status: 400 });
   }
 
-  const { username, password } = parsed.data;
+  const { username, displayName, password } = parsed.data;
+  const finalDisplayName = displayName || username;
   const existing = await db.select({ id: users.id }).from(users).where(eq(users.username, username)).limit(1);
   if (existing.length > 0) {
     return NextResponse.json({ error: '用户名已被占用' }, { status: 409 });
@@ -39,12 +41,12 @@ export async function POST(req: Request) {
 
   const inserted = await db
     .insert(users)
-    .values({ username, passwordHash, displayName: username, avatarUrl, role: 'user' })
+    .values({ username, passwordHash, displayName: finalDisplayName, avatarUrl, role: 'user' })
     .returning({ id: users.id });
 
   await setSessionCookie({ id: inserted[0].id, username, role: 'user' });
   return NextResponse.json({
     ok: true,
-    user: { id: inserted[0].id, username, displayName: username, avatarUrl, role: 'user' },
+    user: { id: inserted[0].id, username, displayName: finalDisplayName, avatarUrl, role: 'user' },
   });
 }
