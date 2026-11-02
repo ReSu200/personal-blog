@@ -85,7 +85,8 @@ export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl 
           : 'border-transparent bg-background/0',
       )}
     >
-      <div className="mx-auto grid h-16 w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 lg:px-8">
+      {/* 移动端只有两列，让右侧图标按内容宽度收缩，站点名称可用剩余空间 */}
+      <div className="mx-auto grid h-16 w-full max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-8">
         {/* 左：站点标识 */}
         <Link href="/" className="group flex min-w-0 items-center gap-2.5 justify-self-start">
           <SiteLogo

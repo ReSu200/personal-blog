@@ -62,7 +62,11 @@ export default async function AdminPostsPage() {
                 <span className="text-xs text-muted-foreground">{post.categoryName ?? '未分类'}</span>
                 <span className="text-xs text-muted-foreground">{formatDate(post.updatedAt, true)}</span>
                 <div className="flex items-center justify-end gap-1">
-                  <Link href={`/admin/posts/${post.id}`}>
+                  <Link
+                    href={`/admin/posts/${post.id}`}
+                    aria-label={`编辑文章：${post.title}`}
+                    title={`编辑《${post.title}》`}
+                  >
                     <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg transition-colors hover:bg-accent">
                       <PencilLine className="h-4 w-4" />
                     </span>

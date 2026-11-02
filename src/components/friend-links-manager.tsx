@@ -35,7 +35,7 @@ type Draft = {
 
 const EMPTY_DRAFT: Draft = {
   name: '',
-  url: 'https://',
+  url: '',
   description: '',
   sortOrder: '',
   isVisible: true,
@@ -45,7 +45,7 @@ export function FriendLinksManager({ links }: { links: FriendLink[] }) {
   const router = useRouter();
 
   const [name, setName] = useState('');
-  const [url, setUrl] = useState('https://');
+  const [url, setUrl] = useState('');
   const [description, setDescription] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -73,7 +73,7 @@ export function FriendLinksManager({ links }: { links: FriendLink[] }) {
         return;
       }
       setName('');
-      setUrl('https://');
+      setUrl('');
       setDescription('');
       setMessage('友链已添加，默认追加到列表末尾');
       router.refresh();
@@ -384,7 +384,7 @@ export function FriendLinksManager({ links }: { links: FriendLink[] }) {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 maxLength={500}
-                placeholder="https://example.com"
+                placeholder="https://example.com 或 http://example.com"
               />
             </div>
             <div>

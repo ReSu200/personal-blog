@@ -14,6 +14,7 @@ import {
   Music2,
   Settings,
   Tags,
+  UserRound,
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui';
@@ -77,6 +78,12 @@ export function AdminShell({ username, siteName, logoUrl, children }: Props) {
   const actions = (
     <div className="mt-auto space-y-1 pt-6">
       <Link
+        href="/account"
+        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+      >
+        <UserRound className="h-4 w-4" /> 个人中心
+      </Link>
+      <Link
         href="/"
         className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
       >
@@ -98,7 +105,13 @@ export function AdminShell({ username, siteName, logoUrl, children }: Props) {
           <SiteLogo name={siteName} logoUrl={logoUrl} className="h-8 w-8 rounded-lg text-sm" />
           <span className="font-semibold">管理后台</span>
         </Link>
-        <Button variant="ghost" size="icon" onClick={() => setOpen(true)}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setOpen(true)}
+          aria-label="打开后台菜单"
+          title="打开后台菜单"
+        >
           <Menu className="h-5 w-5" />
         </Button>
       </header>
@@ -112,7 +125,13 @@ export function AdminShell({ username, siteName, logoUrl, children }: Props) {
                 <p className="font-semibold leading-tight">管理后台</p>
                 <p className="text-[11px] text-muted-foreground">{username}</p>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setOpen(false)}
+                aria-label="关闭后台菜单"
+                title="关闭后台菜单"
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
