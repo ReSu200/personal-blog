@@ -27,15 +27,14 @@ export async function PUT(req: Request) {
   const data = parsed.data;
   const rows = await db.select({ id: settings.id }).from(settings).limit(1);
 
-  const values: Partial<typeof settings.$inferInsert> = {
-    siteName: data.siteName ?? '青柠小站',
-    siteDescription: data.siteDescription ?? '',
-    aboutSite: data.aboutSite ?? '',
-    footerText: data.footerText ?? '',
-    musicAutoplay: data.musicAutoplay === undefined ? 1 : data.musicAutoplay ? 1 : 0,
-    musicVolume: data.musicVolume ?? 0.5,
-    updatedAt: new Date(),
-  };
+  // 只更新请求里出现的字段，避免局部保存（如音乐页只提交播放器设置）覆盖其他配置
+  const values: Partial<typeof settings.$inferInsert> = { updatedAt: new Date() };
+  if (data.siteName !== undefined) values.siteName = data.siteName;
+  if (data.siteDescription !== undefined) values.siteDescription = data.siteDescription;
+  if (data.aboutSite !== undefined) values.aboutSite = data.aboutSite;
+  if (data.footerText !== undefined) values.footerText = data.footerText;
+  if (data.musicAutoplay !== undefined) values.musicAutoplay = data.musicAutoplay ? 1 : 0;
+  if (data.musicVolume !== undefined) values.musicVolume = data.musicVolume;
 
   if (rows[0]) {
     await db.update(settings).set(values).where(eq(settings.id, rows[0].id));

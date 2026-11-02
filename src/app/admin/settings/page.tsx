@@ -14,7 +14,7 @@ export default async function AdminSettingsPage() {
       <div>
         <h1 className="text-xl font-bold">站点设置</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          修改站点标识与音乐播放行为；博主昵称、头像与 GitHub 请在个人中心维护
+          修改站点标识与展示文案；播放器默认行为在「音乐管理」中设置，博主昵称、头像与 GitHub 请在个人中心维护
         </p>
       </div>
 
@@ -32,8 +32,6 @@ export default async function AdminSettingsPage() {
           featuredCoverPosition: settings.featuredCoverPosition,
           latestCover: settings.latestCover,
           latestCoverPosition: settings.latestCoverPosition,
-          musicAutoplay: settings.musicAutoplay === 1,
-          musicVolume: Number(settings.musicVolume),
         }}
       />
     </div>

@@ -8,6 +8,8 @@ import {
   CheckCircle2,
   Loader2,
   Music2,
+  Save,
+  Settings2,
   Star,
   Trash2,
   Upload,
@@ -45,7 +47,15 @@ function readDuration(file: File): Promise<number | null> {
   });
 }
 
-export function MusicManager({ songs }: { songs: Song[] }) {
+export function MusicManager({
+  songs,
+  autoplay: initialAutoplay,
+  volume: initialVolume,
+}: {
+  songs: Song[];
+  autoplay: boolean;
+  volume: number;
+}) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -54,6 +64,37 @@ export function MusicManager({ songs }: { songs: Song[] }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+
+  const [autoplay, setAutoplay] = useState(initialAutoplay);
+  const [volume, setVolume] = useState(initialVolume);
+  const [playbackLoading, setPlaybackLoading] = useState(false);
+  const [playbackMessage, setPlaybackMessage] = useState('');
+  const [playbackError, setPlaybackError] = useState('');
+
+  /** 只提交播放器相关字段，站点设置接口按字段做局部更新 */
+  async function savePlayback() {
+    setPlaybackError('');
+    setPlaybackMessage('');
+    setPlaybackLoading(true);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ musicAutoplay: autoplay, musicVolume: volume }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPlaybackError(data.error ?? '保存失败');
+        return;
+      }
+      setPlaybackMessage('播放器设置已保存');
+      router.refresh();
+    } catch {
+      setPlaybackError('网络异常，请稍后再试');
+    } finally {
+      setPlaybackLoading(false);
+    }
+  }
 
   async function upload() {
     setError('');
@@ -219,52 +260,100 @@ export function MusicManager({ songs }: { songs: Song[] }) {
         </div>
       </Card>
 
-      <Card className="h-fit p-5">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <Upload className="h-4 w-4 text-primary" /> 上传歌曲
-        </h2>
-        <p className="mt-1 text-xs text-muted-foreground">支持 MP3 / WAV / OGG / FLAC，单个文件不超过 50MB</p>
+      <div className="space-y-5">
+        <Card className="p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <Upload className="h-4 w-4 text-primary" /> 上传歌曲
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">支持 MP3 / WAV / OGG / FLAC，单个文件不超过 50MB</p>
 
-        <div className="mt-4 space-y-3">
-          <div>
-            <Label htmlFor="music-file">音频文件</Label>
-            <input
-              id="music-file"
-              ref={fileRef}
-              type="file"
-              accept=".mp3,.wav,.ogg,.flac,audio/*"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="block w-full cursor-pointer rounded-lg border border-input bg-card px-3 py-2 text-xs file:mr-3 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-xs file:text-primary"
-            />
-          </div>
-          <div>
-            <Label htmlFor="music-title">歌曲名（可选）</Label>
-            <Input
-              id="music-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="默认使用文件名"
-            />
-          </div>
-          <div>
-            <Label htmlFor="music-artist">艺术家（可选）</Label>
-            <Input
-              id="music-artist"
-              value={artist}
-              onChange={(e) => setArtist(e.target.value)}
-              placeholder="Demo Studio"
-            />
-          </div>
+          <div className="mt-4 space-y-3">
+            <div>
+              <Label htmlFor="music-file">音频文件</Label>
+              <input
+                id="music-file"
+                ref={fileRef}
+                type="file"
+                accept=".mp3,.wav,.ogg,.flac,audio/*"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="block w-full cursor-pointer rounded-lg border border-input bg-card px-3 py-2 text-xs file:mr-3 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-xs file:text-primary"
+              />
+            </div>
+            <div>
+              <Label htmlFor="music-title">歌曲名（可选）</Label>
+              <Input
+                id="music-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="默认使用文件名"
+              />
+            </div>
+            <div>
+              <Label htmlFor="music-artist">艺术家（可选）</Label>
+              <Input
+                id="music-artist"
+                value={artist}
+                onChange={(e) => setArtist(e.target.value)}
+                placeholder="Demo Studio"
+              />
+            </div>
 
-          <Button className="w-full" onClick={upload} disabled={loading || !file}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-            上传
-          </Button>
+            <Button className="w-full" onClick={upload} disabled={loading || !file}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              上传
+            </Button>
 
-          {message && <p className="text-xs text-emerald-600 dark:text-emerald-400">{message}</p>}
-          {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
-        </div>
-      </Card>
+            {message && <p className="text-xs text-emerald-600 dark:text-emerald-400">{message}</p>}
+            {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <Settings2 className="h-4 w-4 text-primary" /> 播放器默认行为
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">修改后需点击保存，前台左下角播放器会随之同步</p>
+
+          <div className="mt-4 space-y-4">
+            <label className="flex cursor-pointer items-center justify-between gap-3 text-sm">
+              <span>
+                进入页面自动播放
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  浏览器可能拦截有声自动播放，此时会静音播放并提示用户开启
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                checked={autoplay}
+                onChange={(e) => setAutoplay(e.target.checked)}
+                className="h-4 w-4 accent-[hsl(var(--primary))]"
+              />
+            </label>
+
+            <div>
+              <Label htmlFor="musicVolume">默认音量：{Math.round(volume * 100)}%</Label>
+              <input
+                id="musicVolume"
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={volume}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-[hsl(var(--primary))]"
+              />
+            </div>
+
+            <Button className="w-full" onClick={savePlayback} disabled={playbackLoading}>
+              {playbackLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              保存播放器设置
+            </Button>
+
+            {playbackMessage && <p className="text-xs text-emerald-600 dark:text-emerald-400">{playbackMessage}</p>}
+            {playbackError && <p className="text-xs text-red-600 dark:text-red-400">{playbackError}</p>}
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Image as ImageIcon, Loader2, Music, Palette, RotateCcw, Save, Store, Upload, X } from 'lucide-react';
+import {
+  Image as ImageIcon,
+  Loader2,
+  Palette,
+  RotateCcw,
+  Save,
+  Store,
+  Upload,
+  X,
+} from 'lucide-react';
 import { Button, Card, Input, Label, Textarea } from '@/components/ui';
 import { SiteLogo } from '@/components/site-logo';
 import { CoverPositionPreview } from '@/components/cover-position-preview';
@@ -20,8 +29,6 @@ type SettingsValues = {
   featuredCoverPosition: string;
   latestCover: string | null;
   latestCoverPosition: string;
-  musicAutoplay: boolean;
-  musicVolume: number;
 };
 
 type CoverKind = 'featured' | 'latest';
@@ -149,8 +156,6 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
           siteDescription: values.siteDescription,
           aboutSite: values.aboutSite,
           footerText: values.footerText,
-          musicAutoplay: values.musicAutoplay,
-          musicVolume: values.musicVolume,
         }),
       });
       const data = await res.json();
@@ -640,44 +645,6 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
             })}
           </div>
         </section>
-
-        <section className="p-5 sm:p-6">
-          <SectionTitle
-            icon={<Music className="h-4 w-4" />}
-            title="音乐播放"
-            desc="左下角播放器的默认行为，修改后需点击下方保存"
-          />
-          <div className="mt-4 space-y-4">
-            <label className="flex cursor-pointer items-center justify-between gap-3 text-sm">
-              <span>
-                进入页面自动播放
-                <span className="mt-0.5 block text-xs text-muted-foreground">
-                  浏览器可能拦截有声自动播放，此时会静音播放并提示用户开启
-                </span>
-              </span>
-              <input
-                type="checkbox"
-                checked={values.musicAutoplay}
-                onChange={(e) => update('musicAutoplay', e.target.checked)}
-                className="h-4 w-4 accent-[hsl(var(--primary))]"
-              />
-            </label>
-
-            <div>
-              <Label htmlFor="musicVolume">默认音量：{Math.round(values.musicVolume * 100)}%</Label>
-              <input
-                id="musicVolume"
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={values.musicVolume}
-                onChange={(e) => update('musicVolume', Number(e.target.value))}
-                className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-[hsl(var(--primary))]"
-              />
-            </div>
-          </div>
-        </section>
       </Card>
 
       <div className="sticky bottom-4 z-10">
@@ -685,7 +652,7 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
           <div className="min-w-0">
             <p className="text-sm font-medium">保存更改</p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              仅保存站点名称、描述与音乐设置；Logo、背景板和封面在上传时已即时生效
+              仅保存站点名称、描述与文案；Logo、背景板和封面在上传时已即时生效
             </p>
             {message && <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">{message}</p>}
             {error && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{error}</p>}
