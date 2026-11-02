@@ -20,13 +20,12 @@ export default async function HomePage({
   const page = Math.max(1, Number(params.page) || 1);
   const [settings, data, pinned] = await Promise.all([
     getSettings(),
-    listPosts({ page, pageSize: 6 }),
+    // 置顶文章已在推荐位独占展示，列表查询直接排除，保证首页每页数量稳定
+    listPosts({ page, pageSize: 6, excludePinned: true }),
     listPinnedPosts(2),
   ]);
 
-  // 置顶文章已在推荐位展示，避免在最新列表里重复出现
-  const pinnedIds = new Set(pinned.map((post) => post.id));
-  const latest = data.items.filter((post) => !pinnedIds.has(post.id));
+  const latest = data.items;
 
   const cookieStore = await cookies();
 

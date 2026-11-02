@@ -168,11 +168,13 @@ type ListOptions = {
   category?: string;
   tag?: string;
   includeDrafts?: boolean;
+  excludePinned?: boolean;
 };
 
 function buildWhere(opts: ListOptions) {
   const conditions = [];
   if (!opts.includeDrafts) conditions.push(eq(posts.status, 'published'));
+  if (opts.excludePinned) conditions.push(eq(posts.isPinned, 0));
   if (opts.q) {
     conditions.push(
       or(like(posts.title, `%${opts.q}%`), like(posts.summary, `%${opts.q}%`)) as ReturnType<typeof eq>,
@@ -232,11 +234,8 @@ export async function listPosts(opts: ListOptions = {}) {
       .orderBy(desc(posts.isPinned), desc(posts.publishedAt), desc(posts.id))
       .limit(pageSize)
       .offset((page - 1) * pageSize),
-    db
-      .select({ value: count() })
-      .from(posts)
-      .leftJoin(categories, eq(posts.categoryId, categories.id))
-      .where(where),
+    // 计数只需要 posts 表，多余的分类 join 会白白放大扫描成本
+    db.select({ value: count() }).from(posts).where(where),
   ]);
 
   const total = Number(totalRows[0]?.value ?? 0);

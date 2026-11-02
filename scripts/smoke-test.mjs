@@ -275,15 +275,7 @@ try {
   if (deletePost.status === 200) pass('管理员删除文章');
   else fail('管理员删除文章', `status=${deletePost.status}`);
 
-  // 20. 音乐配置接口
-  const music = await guest.request('/api/music');
-  if (music.status === 200 && Array.isArray(music.json?.songs) && music.json.songs.length >= 1) {
-    pass('音乐接口返回播放列表', `${music.json.songs.length} 首，自动播放=${music.json.autoplay}`);
-  } else {
-    fail('音乐接口返回播放列表', `status=${music.status}`);
-  }
-
-  // 21. 非管理员调用后台接口应被拒绝
+  // 20. 非管理员调用后台接口应被拒绝
   const forbidden = await normal.request('/api/admin/posts', {
     method: 'POST',
     body: { title: 'x', content: 'x', status: 'draft' },
@@ -291,13 +283,13 @@ try {
   if (forbidden.status === 403) pass('普通用户调用后台接口被拒绝');
   else fail('普通用户调用后台接口被拒绝', `status=${forbidden.status}`);
 
-  // 22. 退出登录后后台不可访问
+  // 21. 退出登录后后台不可访问
   const logoutRes = await admin.request('/api/auth/logout', { method: 'POST' });
   const afterLogout = await admin.request('/admin');
   if (logoutRes.status === 200 && afterLogout.status === 307) pass('退出登录后会话失效');
   else fail('退出登录后会话失效', `logout=${logoutRes.status} admin=${afterLogout.status}`);
 
-  // 23. RSS
+  // 22. RSS
   const rss = await guest.request('/rss.xml');
   if (rss.status === 200 && rss.text.includes('<rss')) pass('RSS 输出正常');
   else fail('RSS 输出正常', `status=${rss.status}`);

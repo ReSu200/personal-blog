@@ -31,7 +31,7 @@ function resolvePublishedAt(status: 'draft' | 'published', value?: string | null
 }
 
 export async function POST(req: Request) {
-  const { response } = await guardAdmin();
+  const { session, response } = await guardAdmin();
   if (response) return response;
 
   const body = await req.json().catch(() => null);
@@ -41,7 +41,6 @@ export async function POST(req: Request) {
   }
 
   const data = parsed.data;
-  const { session } = await guardAdmin();
   const slug = await uniquePostSlug(data.slug?.trim() || data.title);
 
   const inserted = await db
