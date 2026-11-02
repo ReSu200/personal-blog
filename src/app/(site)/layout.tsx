@@ -3,7 +3,7 @@ import { getSession } from '@/lib/auth';
 import { getSettings, getUserById, listSongs } from '@/lib/queries';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
-import { MusicPlayer } from '@/components/music-player';
+import { MusicPlayerLazy } from '@/components/music-player-lazy';
 import { PLAYER_POSITION_COOKIE } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -18,8 +18,15 @@ function parsePosition(raw: string | undefined) {
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   // 歌曲列表改为服务端直出，避免每个页面再额外发一次 /api/music 请求
-  const [settings, session, songs] = await Promise.all([getSettings(), getSession(), listSongs()]);
-  const profile = session ? await getUserById(session.id) : null;
+  // 用户资料依赖 session，提前发起 Promise 以免多等一次串行查询
+  const sessionPromise = getSession();
+  const profilePromise = sessionPromise.then((current) => (current ? getUserById(current.id) : null));
+  const [settings, session, songs, profile] = await Promise.all([
+    getSettings(),
+    sessionPromise,
+    listSongs(),
+    profilePromise,
+  ]);
 
   // 播放器拖拽位置存在 Cookie 中，服务端直接渲染，避免首屏从默认角落跳到保存位置
   const cookieStore = await cookies();
@@ -44,7 +51,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         githubUrl={settings.githubUrl}
         footerText={settings.footerText}
       />
-      <MusicPlayer
+      <MusicPlayerLazy
         songs={songs.map((song) => ({
           id: song.id,
           title: song.title,

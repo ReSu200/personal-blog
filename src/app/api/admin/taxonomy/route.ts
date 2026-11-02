@@ -61,5 +61,7 @@ export async function DELETE(req: Request) {
 
   revalidateTag(CACHE_TAGS.taxonomy, 'max');
   revalidateTag(CACHE_TAGS.stats, 'max');
+  // 分类/标签变更会影响列表上的分类名与标签，需要一起失效（立即过期，与 'max' 语义不同）
+  revalidateTag(CACHE_TAGS.posts, { expire: 0 });
   return NextResponse.json({ ok: true });
 }

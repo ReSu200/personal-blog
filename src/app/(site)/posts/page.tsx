@@ -4,7 +4,7 @@ import { EmptyState } from '@/components/ui';
 import { PostCard } from '@/components/post-card';
 import { Pagination } from '@/components/pagination';
 import { SiteAside } from '@/components/site-aside';
-import { getCategoriesWithCount, getSettings, getTagsWithCount, listPosts } from '@/lib/queries';
+import { getCategoriesWithCount, getSettings, getTagsWithCount, listPosts, listPostsUncached } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,8 +30,11 @@ export default async function PostsPage({
   const category = params.category || '';
   const tag = params.tag || '';
 
+  // 带关键词的搜索命中率低且参数不可枚举，跳过缓存直接查库
+  const loadPosts = q ? listPostsUncached : listPosts;
+
   const [data, categories, tags, settings] = await Promise.all([
-    listPosts({ page, pageSize: 10, q, category, tag }),
+    loadPosts({ page, pageSize: 10, q, category, tag }),
     getCategoriesWithCount(),
     getTagsWithCount(),
     getSettings(),

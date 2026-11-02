@@ -83,6 +83,8 @@ export async function PUT(
 
   revalidateTag(CACHE_TAGS.taxonomy, 'max');
   revalidateTag(CACHE_TAGS.stats, 'max');
+  // 立即过期，保证编辑/删除后首次刷新即可见（'max' 会先返回旧数据）
+  revalidateTag(CACHE_TAGS.posts, { expire: 0 });
   return NextResponse.json({ ok: true, id, slug });
 }
 
@@ -105,5 +107,7 @@ export async function DELETE(
 
   revalidateTag(CACHE_TAGS.taxonomy, 'max');
   revalidateTag(CACHE_TAGS.stats, 'max');
+  // 立即过期，保证编辑/删除后首次刷新即可见（'max' 会先返回旧数据）
+  revalidateTag(CACHE_TAGS.posts, { expire: 0 });
   return NextResponse.json({ ok: true });
 }

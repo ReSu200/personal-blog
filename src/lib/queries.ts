@@ -12,6 +12,7 @@ export const CACHE_TAGS = {
   links: 'friend-links',
   music: 'music',
   stats: 'site-stats',
+  posts: 'posts',
 } as const;
 
 export type SettingsData = {
@@ -180,7 +181,12 @@ function buildWhere(opts: ListOptions) {
       or(like(posts.title, `%${opts.q}%`), like(posts.summary, `%${opts.q}%`)) as ReturnType<typeof eq>,
     );
   }
-  if (opts.category) conditions.push(eq(categories.slug, opts.category));
+  // 用子查询过滤分类，避免计数查询依赖 categories 表（该查询已去掉 join）
+  if (opts.category) {
+    conditions.push(
+      sql`${posts.categoryId} IN (SELECT id FROM categories WHERE slug = ${opts.category})`,
+    );
+  }
   if (opts.tag) {
     conditions.push(
       sql`EXISTS (SELECT 1 FROM post_tags pt INNER JOIN tags t ON t.id = pt.tag_id WHERE pt.post_id = ${posts.id} AND t.slug = ${opts.tag})`,
@@ -207,7 +213,8 @@ async function attachTags(items: Omit<PostListItem, 'tags'>[]): Promise<PostList
   return items.map((item) => ({ ...item, tags: map.get(item.id) ?? [] }));
 }
 
-export async function listPosts(opts: ListOptions = {}) {
+// 搜索参数组合不可枚举，跳过量化的缓存直接查库，避免缓存条目随关键词无限增长
+export async function listPostsUncached(opts: ListOptions = {}) {
   const page = Math.max(1, opts.page ?? 1);
   const pageSize = opts.pageSize ?? 10;
   const where = buildWhere(opts);
@@ -250,7 +257,13 @@ export async function listPosts(opts: ListOptions = {}) {
   };
 }
 
-export async function listPinnedPosts(limit = 2): Promise<PostListItem[]> {
+// 列表数据跨请求缓存 60s，文章增删改时用 CACHE_TAGS.posts 主动失效
+export const listPosts = unstable_cache(listPostsUncached, ['posts-list'], {
+  revalidate: 60,
+  tags: [CACHE_TAGS.posts],
+});
+
+async function listPinnedPostsQuery(limit = 2): Promise<PostListItem[]> {
   const rows = await db
     .select({
       id: posts.id,
@@ -273,6 +286,11 @@ export async function listPinnedPosts(limit = 2): Promise<PostListItem[]> {
 
   return attachTags(rows);
 }
+
+export const listPinnedPosts = unstable_cache(listPinnedPostsQuery, ['pinned-posts'], {
+  revalidate: 60,
+  tags: [CACHE_TAGS.posts],
+});
 
 // generateMetadata 与页面渲染会各调用一次，cache 保证只查一次库
 export const getPostBySlug = cache(async (slug: string) => {
@@ -301,7 +319,7 @@ export const getPostBySlug = cache(async (slug: string) => {
   return { ...row, tags: tagRows };
 });
 
-export async function getAdjacentPosts(post: { id: number; publishedAt: Date | null }) {
+async function getAdjacentPostsQuery(post: { id: number; publishedAt: Date | null }) {
   const currentTime = post.publishedAt ?? new Date();
   const [prevRows, nextRows] = await Promise.all([
     db
@@ -320,6 +338,12 @@ export async function getAdjacentPosts(post: { id: number; publishedAt: Date | n
   return { prev: prevRows[0] ?? null, next: nextRows[0] ?? null };
 }
 
+export const getAdjacentPosts = unstable_cache(getAdjacentPostsQuery, ['adjacent-posts'], {
+  revalidate: 60,
+  tags: [CACHE_TAGS.posts],
+});
+
+// 阅读数只写库、不失效 posts 缓存标签：列表上的 viewCount 最多滞后 60s，属有意取舍
 export async function incrementView(postId: number) {
   await db
     .update(posts)
