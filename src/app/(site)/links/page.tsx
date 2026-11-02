@@ -1,4 +1,5 @@
 import { ArrowUpRight, Link2, Mail } from 'lucide-react';
+import Link from 'next/link';
 import { Github } from '@/components/icons';
 import { Card } from '@/components/ui';
 import { getSettings } from '@/lib/queries';
@@ -21,7 +22,7 @@ const FRIEND_LINKS = [
   {
     name: 'Drizzle ORM',
     url: 'https://orm.drizzle.team',
-    description: 'TypeScript ORM，类型安全地访问 MySQL。',
+    description: 'TypeScript ORM，类型安全地访问 SQLite。',
   },
   {
     name: 'Lucide',
@@ -107,8 +108,16 @@ export default async function LinksPage() {
         <div>
           <h2 className="text-base font-semibold">申请友链</h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            在任意文章下方留言，附上你的站点名称、地址与一句简介，我会尽快处理。
+            在「友链申请说明」帖下方留言（需先注册账号，昵称可自定），附上站点名称、以 https://
+            开头的地址和一句 20 字以内的简介。请先在本站添加上我的链接，内容以原创为主、站点可正常访问；留言会经人工审核后公开展示。
           </p>
+          <Link
+            href={`/posts/${encodeURIComponent('友链申请说明')}`}
+            className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          >
+            前往友链申请帖
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </Card>
     </div>

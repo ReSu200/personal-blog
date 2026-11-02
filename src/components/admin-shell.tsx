@@ -71,6 +71,24 @@ export function AdminShell({ username, siteName, logoUrl, children }: Props) {
     </nav>
   );
 
+  // 桌面侧栏与移动端抽屉共用，固定在底部
+  const actions = (
+    <div className="mt-auto space-y-1 pt-6">
+      <Link
+        href="/"
+        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" /> 返回前台
+      </Link>
+      <button
+        onClick={logout}
+        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+      >
+        <LogOut className="h-4 w-4" /> 退出登录
+      </button>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-card/90 px-4 backdrop-blur-sm lg:hidden">
@@ -86,14 +104,18 @@ export function AdminShell({ username, siteName, logoUrl, children }: Props) {
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-card p-4">
+          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col overflow-y-auto bg-card p-4">
             <div className="flex items-center justify-between">
-              <span className="font-semibold">管理后台</span>
+              <div>
+                <p className="font-semibold leading-tight">管理后台</p>
+                <p className="text-[11px] text-muted-foreground">{username}</p>
+              </div>
               <Button variant="ghost" size="icon" onClick={() => setOpen(false)}>
                 <X className="h-4 w-4" />
               </Button>
             </div>
             {nav}
+            {actions}
           </aside>
         </div>
       )}
@@ -108,21 +130,7 @@ export function AdminShell({ username, siteName, logoUrl, children }: Props) {
         </div>
 
         {nav}
-
-        <div className="mt-auto space-y-1 pt-6">
-          <Link
-            href="/"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" /> 返回前台
-          </Link>
-          <button
-            onClick={logout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-          >
-            <LogOut className="h-4 w-4" /> 退出登录
-          </button>
-        </div>
+        {actions}
       </aside>
 
       <main className="px-4 py-6 lg:pl-64 lg:pr-8">
