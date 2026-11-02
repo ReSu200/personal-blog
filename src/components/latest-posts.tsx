@@ -1,15 +1,14 @@
-'use client';
-
 import Link from 'next/link';
-import { useState } from 'react';
-import { ArrowRight, LayoutGrid, List } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
 import { PostCard, PostGridCard } from '@/components/post-card';
-import { cn, VIEW_COOKIE } from '@/lib/utils';
+import { ViewToggle } from '@/components/view-toggle';
+import { cn } from '@/lib/utils';
 import type { PostListItem } from '@/lib/queries';
 
 type ViewMode = 'list' | 'grid';
 
+/** 服务端组件：按 Cookie 里的视图偏好直接渲染卡片，客户端只保留切换按钮 */
 export function LatestPosts({
   posts,
   total,
@@ -24,12 +23,7 @@ export function LatestPosts({
   initialMode?: ViewMode;
 }) {
   // 初始值由服务端按 Cookie 渲染，避免先显示列表再跳到九宫格
-  const [mode, setMode] = useState<ViewMode>(initialMode);
-
-  function changeMode(next: ViewMode) {
-    setMode(next);
-    document.cookie = `${VIEW_COOKIE}=${next};path=/;max-age=31536000;samesite=lax`;
-  }
+  const mode: ViewMode = initialMode;
 
   return (
     <>
@@ -52,42 +46,7 @@ export function LatestPosts({
             查看全部 <ArrowRight className="h-3.5 w-3.5" />
           </Link>
 
-          <div
-            role="group"
-            aria-label="切换浏览模式"
-            className="flex items-center gap-0.5 rounded-full border border-border/70 bg-card p-0.5"
-          >
-            <button
-              type="button"
-              onClick={() => changeMode('list')}
-              aria-pressed={mode === 'list'}
-              aria-label="列表视图"
-              title="列表视图"
-              className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-full transition-colors',
-                mode === 'list'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <List className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => changeMode('grid')}
-              aria-pressed={mode === 'grid'}
-              aria-label="九宫格视图"
-              title="九宫格视图"
-              className={cn(
-                'flex h-7 w-7 items-center justify-center rounded-full transition-colors',
-                mode === 'grid'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-          </div>
+          <ViewToggle mode={mode} />
         </div>
       </div>
 
@@ -95,7 +54,6 @@ export function LatestPosts({
         <EmptyState text="还没有发布文章，登录后台开始创作吧" />
       ) : (
         <div
-          key={mode}
           className={cn(mode === 'grid' ? 'grid gap-5 sm:grid-cols-2 2xl:grid-cols-3' : 'space-y-4')}
         >
           {posts.map((post) =>

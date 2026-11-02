@@ -28,7 +28,8 @@ export async function POST() {
       .limit(1);
 
     return NextResponse.json({ count: Number(row?.visitCount ?? 0) });
-  } catch {
+  } catch (error) {
+    console.error('[api/visit] 访问量更新失败', error);
     return NextResponse.json({ error: '统计失败' }, { status: 500 });
   }
 }

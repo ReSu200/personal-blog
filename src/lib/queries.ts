@@ -128,7 +128,9 @@ async function loadSettings(): Promise<SettingsData> {
       authorWechat: admin?.wechat ?? null,
       githubUrl: admin?.githubUrl ?? null,
     };
-  } catch {
+  } catch (error) {
+    // 数据库异常时退回默认配置，但要留下日志，便于定位“设置丢失”类问题
+    console.error('[loadSettings] 读取站点设置失败，使用默认配置', error);
     return fallbackSettings;
   }
 }

@@ -1,4 +1,6 @@
 import React from 'react';
+// 代码高亮主题只在渲染正文的页面加载，不再随根布局全局下发
+import 'highlight.js/styles/github-dark.css';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import 'highlight.js/styles/github-dark.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { getSettings } from '@/lib/queries';
 

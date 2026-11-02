@@ -1,12 +1,17 @@
 ﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Check, ChevronDown, Eye, ImagePlus, Loader2, Save, Search, Send, Trash2, X } from 'lucide-react';
 import { Button, Card, Input, Label, Textarea } from '@/components/ui';
-import { Markdown } from '@/components/markdown';
 import { CoverPositionPreview } from '@/components/cover-position-preview';
+
+// 预览依赖 react-markdown 与代码高亮，懒加载后不进编辑器首屏包
+const Markdown = dynamic(() => import('@/components/markdown').then((mod) => mod.Markdown), {
+  loading: () => <p className="text-sm text-muted-foreground">正在加载预览…</p>,
+});
 
 type Category = { id: number; name: string };
 type Tag = { id: number; name: string };
