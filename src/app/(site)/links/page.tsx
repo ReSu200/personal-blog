@@ -2,37 +2,14 @@ import { ArrowUpRight, Link2, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { Github } from '@/components/icons';
 import { Card } from '@/components/ui';
-import { getSettings } from '@/lib/queries';
+import { getSettings, listVisibleFriendLinks } from '@/lib/queries';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = { title: '友链' };
 
-const FRIEND_LINKS = [
-  {
-    name: 'Next.js',
-    url: 'https://nextjs.org',
-    description: 'React 全栈框架，本站的技术底座。',
-  },
-  {
-    name: 'Tailwind CSS',
-    url: 'https://tailwindcss.com',
-    description: '原子化 CSS，快速搭建整洁的界面。',
-  },
-  {
-    name: 'Drizzle ORM',
-    url: 'https://orm.drizzle.team',
-    description: 'TypeScript ORM，类型安全地访问 SQLite。',
-  },
-  {
-    name: 'Lucide',
-    url: 'https://lucide.dev',
-    description: '简洁一致的开源图标库。',
-  },
-];
-
 export default async function LinksPage() {
-  const settings = await getSettings();
+  const [settings, friendLinks] = await Promise.all([getSettings(), listVisibleFriendLinks()]);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -45,7 +22,7 @@ export default async function LinksPage() {
       </header>
 
       <div className="mt-7 grid gap-4 sm:grid-cols-2">
-        {FRIEND_LINKS.map((link) => (
+        {friendLinks.map((link) => (
           <a
             key={link.url}
             href={link.url}
@@ -69,6 +46,11 @@ export default async function LinksPage() {
             </Card>
           </a>
         ))}
+        {friendLinks.length === 0 && (
+          <p className="rounded-2xl border border-dashed border-border px-5 py-10 text-center text-sm text-muted-foreground sm:col-span-2">
+            暂无友链，欢迎按下方说明申请交换链接。
+          </p>
+        )}
       </div>
 
       <Card className="mt-6 rounded-3xl p-6 sm:p-8">

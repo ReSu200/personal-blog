@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   FileText,
   LayoutDashboard,
+  Link2,
   LogOut,
   Menu,
   MessageSquare,
@@ -24,6 +25,7 @@ const items = [
   { href: '/admin/posts', label: '文章管理', icon: FileText },
   { href: '/admin/comments', label: '评论管理', icon: MessageSquare },
   { href: '/admin/taxonomy', label: '分类与标签', icon: Tags },
+  { href: '/admin/links', label: '友链管理', icon: Link2 },
   { href: '/admin/music', label: '音乐管理', icon: Music2 },
   { href: '/admin/settings', label: '站点设置', icon: Settings },
 ];

@@ -103,6 +103,18 @@ const DDL = [
     created_at INTEGER NOT NULL DEFAULT (unixepoch())
   )`,
 
+  `CREATE TABLE IF NOT EXISTS friend_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    description TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_visible INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS uk_friend_links_url ON friend_links(url)`,
+
   `CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     site_name TEXT,
@@ -297,6 +309,30 @@ VACUUM INTO 'backup/blog-2026-11-02.db';
   },
 ];
 
+/** 首次初始化时的默认友链，与前台原有内容保持一致 */
+const FRIEND_LINKS = [
+  {
+    name: 'Next.js',
+    url: 'https://nextjs.org',
+    description: 'React 全栈框架，本站的技术底座。',
+  },
+  {
+    name: 'Tailwind CSS',
+    url: 'https://tailwindcss.com',
+    description: '原子化 CSS，快速搭建整洁的界面。',
+  },
+  {
+    name: 'Drizzle ORM',
+    url: 'https://orm.drizzle.team',
+    description: 'TypeScript ORM，类型安全地访问 SQLite。',
+  },
+  {
+    name: 'Lucide',
+    url: 'https://lucide.dev',
+    description: '简洁一致的开源图标库。',
+  },
+];
+
 function count(sql) {
   return db.prepare(sql).get().cnt;
 }
@@ -334,6 +370,7 @@ function main() {
   if (count('SELECT COUNT(*) AS cnt FROM posts') > 0) {
     console.log('→ 已存在文章数据，跳过内容初始化。');
     ensureSettings();
+    ensureFriendLinks();
     db.close();
     console.log('✅ 数据库检查完成。');
     return;
@@ -439,6 +476,7 @@ function main() {
   }
 
   ensureSettings();
+  ensureFriendLinks();
   db.close();
   console.log('✅ 初始化完成！');
   console.log('   管理员：admin / admin123');
@@ -452,6 +490,19 @@ function ensureSettings() {
     `INSERT INTO settings (site_name, site_description, music_autoplay, music_volume, created_at, updated_at)
      VALUES (?, ?, 1, 0.50, ?, ?)`,
   ).run('青柠小站', '记录技术、生活与思考的个人博客', now, now);
+}
+
+/** 友链表为空时写入默认友链，后台已有数据时保持原样 */
+function ensureFriendLinks() {
+  if (count('SELECT COUNT(*) AS cnt FROM friend_links') > 0) return;
+  const now = Math.floor(Date.now() / 1000);
+  const insert = db.prepare(
+    `INSERT INTO friend_links (name, url, description, sort_order, is_visible, created_at, updated_at)
+     VALUES (?, ?, ?, ?, 1, ?, ?)`,
+  );
+  FRIEND_LINKS.forEach((link, index) => {
+    insert.run(link.name, link.url, link.description, index, now, now);
+  });
 }
 
 try {

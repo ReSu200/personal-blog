@@ -114,6 +114,17 @@ export const songs = sqliteTable('songs', {
   createdAt: createdAt(),
 });
 
+export const friendLinks = sqliteTable('friend_links', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  url: text('url').notNull().unique(),
+  description: text('description'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  isVisible: integer('is_visible').notNull().default(1),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
 export const settings = sqliteTable('settings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   siteName: text('site_name'),
@@ -138,4 +149,5 @@ export type User = typeof users.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type Song = typeof songs.$inferSelect;
+export type FriendLink = typeof friendLinks.$inferSelect;
 export type Settings = typeof settings.$inferSelect;

@@ -1,7 +1,7 @@
 import { cache } from 'react';
 import { and, asc, count, desc, eq, gt, inArray, like, lt, or, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { categories, comments, posts, postTags, settings, songs, tags, users } from '@/db/schema';
+import { categories, comments, friendLinks, posts, postTags, settings, songs, tags, users } from '@/db/schema';
 import { DEFAULT_ABOUT_SITE } from '@/lib/utils';
 
 export type SettingsData = {
@@ -470,6 +470,25 @@ export async function adminDashboard() {
 export async function listSongs() {
   return db.select().from(songs).orderBy(asc(songs.sortOrder), asc(songs.id));
 }
+
+/** 后台友链列表：包含隐藏项 */
+export async function listFriendLinks() {
+  return db.select().from(friendLinks).orderBy(asc(friendLinks.sortOrder), asc(friendLinks.id));
+}
+
+// 前台友链只展示可见项，cache 避免同一请求重复查询
+export const listVisibleFriendLinks = cache(async () => {
+  return db
+    .select({
+      id: friendLinks.id,
+      name: friendLinks.name,
+      url: friendLinks.url,
+      description: friendLinks.description,
+    })
+    .from(friendLinks)
+    .where(eq(friendLinks.isVisible, 1))
+    .orderBy(asc(friendLinks.sortOrder), asc(friendLinks.id));
+});
 
 export async function listAllCategories() {
   return db.select().from(categories).orderBy(asc(categories.id));
