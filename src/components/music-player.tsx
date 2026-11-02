@@ -204,7 +204,6 @@ export function MusicPlayer({ songs, autoplay, volume: initialVolume, initialPos
     audio.volume = volume;
     audio.muted = muted;
     audio.src = current.filePath;
-    audio.load();
     setCurrentTime(0);
     setDuration(Number(current.duration ?? 0));
     if (!autoplay) return;
