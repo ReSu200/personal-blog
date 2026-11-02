@@ -26,3 +26,9 @@ scripts/_tmp-*.mjs
 # 用户上传的内容（不进仓库，仅保留本地运行）
 public/uploads/
 public/music/
+
+# SQLite 数据库文件（含 WAL / 共享内存文件）
+data/
+*.db
+*.db-wal
+*.db-shm

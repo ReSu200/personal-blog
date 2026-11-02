@@ -11,8 +11,13 @@ import { VIEW_COOKIE } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
-export default async function HomePage({ searchParams }: { searchParams: { page?: string } }) {
-  const page = Math.max(1, Number(searchParams.page) || 1);
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
   const [settings, data, pinned] = await Promise.all([
     getSettings(),
     listPosts({ page, pageSize: 6 }),
@@ -22,6 +27,8 @@ export default async function HomePage({ searchParams }: { searchParams: { page?
   // 置顶文章已在推荐位展示，避免在最新列表里重复出现
   const pinnedIds = new Set(pinned.map((post) => post.id));
   const latest = data.items.filter((post) => !pinnedIds.has(post.id));
+
+  const cookieStore = await cookies();
 
   return (
     <div>
@@ -68,7 +75,7 @@ export default async function HomePage({ searchParams }: { searchParams: { page?
             total={data.total}
             defaultCover={settings.latestCover}
             coverPosition={settings.latestCoverPosition}
-            initialMode={cookies().get(VIEW_COOKIE)?.value === 'grid' ? 'grid' : 'list'}
+            initialMode={cookieStore.get(VIEW_COOKIE)?.value === 'grid' ? 'grid' : 'list'}
           />
           <Pagination page={data.page} totalPages={data.totalPages} basePath="/" />
         </div>

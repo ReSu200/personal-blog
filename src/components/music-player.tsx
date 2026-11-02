@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import {
@@ -20,7 +20,7 @@ type Song = {
   artist: string | null;
   filePath: string;
   coverUrl: string | null;
-  duration: string | null;
+  duration: number | null;
   isDefault: number;
 };
 
@@ -312,7 +312,7 @@ export function MusicPlayer({ songs, autoplay, volume: initialVolume, initialPos
           )}
 
           {expanded ? (
-            <div className="w-72 overflow-hidden rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur">
+            <div className="w-72 overflow-hidden rounded-2xl border border-border bg-card/95 shadow-xl backdrop-blur-sm">
               <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
                 <span className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                   <Music2 className="h-3.5 w-3.5" /> {playing ? '正在播放' : '已暂停'}
@@ -328,7 +328,7 @@ export function MusicPlayer({ songs, autoplay, volume: initialVolume, initialPos
 
               <div className="p-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-teal-500/20 to-cyan-600/20">
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-linear-to-br from-teal-500/20 to-cyan-600/20">
                     {current.coverUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={current.coverUrl} alt={current.title} decoding="async" className="h-full w-full object-cover" />
@@ -376,7 +376,7 @@ export function MusicPlayer({ songs, autoplay, volume: initialVolume, initialPos
                   </button>
                   <button
                     onClick={toggle}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-transform hover:scale-105"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xs transition-transform hover:scale-105"
                     aria-label={playing ? '暂停' : '播放'}
                   >
                     {playing ? <Pause className="h-4 w-4" /> : <Play className="ml-0.5 h-4 w-4" />}
@@ -422,7 +422,7 @@ export function MusicPlayer({ songs, autoplay, volume: initialVolume, initialPos
               onPointerMove={moveDrag}
               onPointerUp={endDrag}
               onPointerCancel={endDrag}
-              className="group flex h-12 w-12 cursor-grab touch-none select-none items-center justify-center rounded-full border border-border bg-card/95 text-primary shadow-lg backdrop-blur transition-transform hover:scale-105 active:cursor-grabbing"
+              className="group flex h-12 w-12 cursor-grab touch-none select-none items-center justify-center rounded-full border border-border bg-card/95 text-primary shadow-lg backdrop-blur-sm transition-transform hover:scale-105 active:cursor-grabbing"
               aria-label="打开音乐播放器（可拖动）"
               title="可拖动调整位置"
             >

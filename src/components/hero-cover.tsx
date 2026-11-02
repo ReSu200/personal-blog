@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+﻿import { cn } from '@/lib/utils';
 
 /**
  * 复用首页背景板图片（作者卡 / 关于页顶部横幅）。
@@ -32,7 +32,7 @@ export function HeroCover({
       />
       <div
         aria-hidden
-        className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-card to-transparent"
+        className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-card to-transparent"
       />
     </div>
   );

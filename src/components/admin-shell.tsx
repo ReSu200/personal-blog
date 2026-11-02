@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -73,7 +73,7 @@ export function AdminShell({ username, siteName, logoUrl, children }: Props) {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-card/90 px-4 backdrop-blur lg:hidden">
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-card/90 px-4 backdrop-blur-sm lg:hidden">
         <Link href="/admin" className="flex items-center gap-2">
           <SiteLogo name={siteName} logoUrl={logoUrl} className="h-8 w-8 rounded-lg text-sm" />
           <span className="font-semibold">管理后台</span>

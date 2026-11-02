@@ -60,7 +60,7 @@ export async function POST(req: Request) {
   const coverUrl = String(form.get('coverUrl') ?? '').trim() || null;
   const durationRaw = String(form.get('duration') ?? '').trim();
   const duration = Number.isFinite(Number(durationRaw)) && Number(durationRaw) > 0
-    ? Number(durationRaw).toFixed(2)
+    ? Math.round(Number(durationRaw) * 100) / 100
     : null;
 
   const inserted = await db
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
       isDefault: 0,
       sortOrder: Date.now() % 100000,
     })
-    .$returningId();
+    .returning({ id: songs.id });
 
   return NextResponse.json({ ok: true, id: inserted[0].id, filePath: `/music/${fileName}` });
 }

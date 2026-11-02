@@ -1,47 +1,145 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/* 用 class 策略的暗色模式（默认 media） */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: 165 25% 99%;
+  --foreground: 195 22% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 195 22% 15%;
+  --primary: 168 62% 36%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 168 40% 95%;
+  --secondary-foreground: 168 58% 25%;
+  --muted: 170 20% 96%;
+  --muted-foreground: 195 12% 45%;
+  --accent: 168 42% 93%;
+  --accent-foreground: 168 58% 24%;
+  --border: 175 18% 90%;
+  --input: 175 18% 87%;
+  --ring: 168 58% 44%;
+  --radius: 0.875rem;
+}
+
+.dark {
+  --background: 195 26% 9%;
+  --foreground: 180 12% 93%;
+  --card: 195 22% 13%;
+  --card-foreground: 180 12% 93%;
+  --primary: 168 58% 48%;
+  --primary-foreground: 195 32% 8%;
+  --secondary: 195 18% 17%;
+  --secondary-foreground: 168 45% 82%;
+  --muted: 195 16% 16%;
+  --muted-foreground: 190 10% 62%;
+  --accent: 195 16% 19%;
+  --accent-foreground: 168 45% 84%;
+  --border: 195 14% 21%;
+  --input: 195 14% 23%;
+  --ring: 168 55% 50%;
+}
+
+/* 设计令牌 → Tailwind 主题变量（inline 保留 var() 引用，切换主题即可换色） */
+@theme inline {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-serif:
+    'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'STSong', 'SimSun', Georgia, serif;
+
+  --animate-fade-in-up: fade-in-up 0.4s ease-out both;
+  --animate-hero-zoom: hero-zoom 8s ease-out both;
+  --animate-avatar-pop: avatar-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  --animate-float-slow: float-slow 7s ease-in-out infinite;
+  --animate-reveal-up: reveal-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-wave-slow: wave-slide 18s linear infinite;
+  --animate-wave-fast: wave-slide 12s linear infinite reverse;
+
+  @keyframes fade-in-up {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes hero-zoom {
+    0% {
+      transform: scale(1);
+    }
+    100% {
+      transform: scale(1.08);
+    }
+  }
+  @keyframes avatar-pop {
+    0% {
+      transform: scale(1) rotate(0deg);
+    }
+    45% {
+      transform: scale(1.18) rotate(-8deg);
+    }
+    75% {
+      transform: scale(1.06) rotate(5deg);
+    }
+    100% {
+      transform: scale(1.1) rotate(0deg);
+    }
+  }
+  @keyframes float-slow {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  @keyframes reveal-up {
+    0% {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes wave-slide {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+}
 
 @layer base {
-  :root {
-    --background: 165 25% 99%;
-    --foreground: 195 22% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 195 22% 15%;
-    --primary: 168 62% 36%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 168 40% 95%;
-    --secondary-foreground: 168 58% 25%;
-    --muted: 170 20% 96%;
-    --muted-foreground: 195 12% 45%;
-    --accent: 168 42% 93%;
-    --accent-foreground: 168 58% 24%;
-    --border: 175 18% 90%;
-    --input: 175 18% 87%;
-    --ring: 168 58% 44%;
-    --radius: 0.875rem;
-  }
-
-  .dark {
-    --background: 195 26% 9%;
-    --foreground: 180 12% 93%;
-    --card: 195 22% 13%;
-    --card-foreground: 180 12% 93%;
-    --primary: 168 58% 48%;
-    --primary-foreground: 195 32% 8%;
-    --secondary: 195 18% 17%;
-    --secondary-foreground: 168 45% 82%;
-    --muted: 195 16% 16%;
-    --muted-foreground: 190 10% 62%;
-    --accent: 195 16% 19%;
-    --accent-foreground: 168 45% 84%;
-    --border: 195 14% 21%;
-    --input: 195 14% 23%;
-    --ring: 168 55% 50%;
-  }
-
   * {
-    @apply border-border;
+    border-color: var(--color-border);
   }
 
   html {
@@ -57,40 +155,39 @@
   }
 }
 
-@layer components {
-  /* 白纸卡片：极浅描边 + 柔和投影，替代厚重的深色阴影 */
-  .card-surface {
-    @apply rounded-2xl border border-border/70 bg-card transition-all duration-300;
-    box-shadow:
-      0 1px 2px hsl(190 30% 20% / 0.04),
-      0 18px 40px -32px hsl(190 35% 20% / 0.35);
-  }
+/* 白纸卡片：极浅描边 + 柔和投影，替代厚重的深色阴影 */
+@utility card-surface {
+  @apply rounded-2xl border border-border/70 bg-card transition-all duration-300;
+  box-shadow:
+    0 1px 2px hsl(190 30% 20% / 0.04),
+    0 18px 40px -32px hsl(190 35% 20% / 0.35);
+}
 
-  .card-hover {
-    @apply hover:-translate-y-0.5 hover:border-primary/25;
-  }
-  .card-hover:hover {
+@utility card-hover {
+  @apply hover:-translate-y-0.5 hover:border-primary/25;
+
+  &:hover {
     box-shadow:
       0 1px 2px hsl(190 30% 20% / 0.05),
       0 22px 46px -30px hsl(168 45% 30% / 0.4);
   }
+}
 
-  /* 首屏画布：薄荷色光晕 + 细点阵，作为自定义背景图时的兜底 */
-  .hero-canvas {
-    background-color: hsl(var(--secondary) / 0.7);
-    background-image:
-      radial-gradient(circle at 16% 18%, hsl(var(--primary) / 0.22), transparent 46%),
-      radial-gradient(circle at 84% 12%, hsl(190 72% 58% / 0.18), transparent 42%),
-      radial-gradient(circle at 68% 92%, hsl(var(--primary) / 0.14), transparent 56%),
-      radial-gradient(hsl(var(--primary) / 0.12) 1px, transparent 1px);
-    background-size:
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      22px 22px;
-  }
+/* 首屏画布：薄荷色光晕 + 细点阵，作为自定义背景图时的兜底 */
+@utility hero-canvas {
+  background-color: hsl(var(--secondary) / 0.7);
+  background-image:
+    radial-gradient(circle at 16% 18%, hsl(var(--primary) / 0.22), transparent 46%),
+    radial-gradient(circle at 84% 12%, hsl(190 72% 58% / 0.18), transparent 42%),
+    radial-gradient(circle at 68% 92%, hsl(var(--primary) / 0.14), transparent 56%),
+    radial-gradient(hsl(var(--primary) / 0.12) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    22px 22px;
 
-  .dark .hero-canvas {
+  &:where(.dark, .dark *) {
     background-color: hsl(var(--secondary) / 0.55);
     background-image:
       radial-gradient(circle at 16% 18%, hsl(var(--primary) / 0.24), transparent 46%),
@@ -98,36 +195,38 @@
       radial-gradient(circle at 68% 92%, hsl(var(--primary) / 0.16), transparent 56%),
       radial-gradient(hsl(var(--primary) / 0.14) 1px, transparent 1px);
   }
+}
 
-  /* 版块小标题的英文眉标 */
-  .eyebrow {
-    @apply text-[11px] font-semibold uppercase tracking-[0.28em] text-primary;
-  }
+/* 版块小标题的英文眉标 */
+@utility eyebrow {
+  @apply text-[11px] font-semibold uppercase tracking-[0.28em] text-primary;
+}
 
-  /* 纯文字链接的下划线动效 */
-  .link-underline {
-    @apply relative;
-  }
-  .link-underline::after {
+/* 纯文字链接的下划线动效 */
+@utility link-underline {
+  @apply relative;
+
+  &::after {
     content: '';
     @apply absolute inset-x-0 -bottom-0.5 h-px origin-left scale-x-0 bg-primary transition-transform duration-300;
   }
-  .link-underline:hover::after {
+  &:hover::after {
     @apply scale-x-100;
   }
 }
 
-@layer utilities {
-  /* 通栏区块：突破外层容器的最大宽度，铺满视口 */
-  .full-bleed {
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-  }
+/* 通栏区块：突破外层容器的最大宽度，铺满视口 */
+@utility full-bleed {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+}
 
-  .text-gradient {
-    @apply bg-gradient-to-r from-teal-500 to-cyan-600 bg-clip-text text-transparent;
-  }
-  .no-scrollbar::-webkit-scrollbar {
+@utility text-gradient {
+  @apply bg-linear-to-r from-teal-500 to-cyan-600 bg-clip-text text-transparent;
+}
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar {
     display: none;
   }
 }
@@ -162,7 +261,7 @@
   @apply overflow-x-auto rounded-xl border border-slate-700 bg-slate-900 p-4 text-sm;
 }
 .prose code {
-  @apply rounded bg-primary/10 px-1 py-0.5 text-[0.85em] font-normal text-primary;
+  @apply rounded-sm bg-primary/10 px-1 py-0.5 text-[0.85em] font-normal text-primary;
 }
 .prose pre code {
   @apply bg-transparent p-0 text-inherit;

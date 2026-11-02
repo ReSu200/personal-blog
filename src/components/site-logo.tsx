@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+﻿import { cn } from '@/lib/utils';
 
 type Props = {
   name: string;
@@ -10,7 +10,7 @@ export function SiteLogo({ name, logoUrl, className }: Props) {
   return (
     <span
       className={cn(
-        'flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 font-bold text-white shadow-sm',
+        'flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-linear-to-br from-teal-500 to-cyan-600 font-bold text-white shadow-xs',
         className,
       )}
     >

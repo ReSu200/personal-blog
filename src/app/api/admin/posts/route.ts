@@ -57,7 +57,7 @@ export async function POST(req: Request) {
       isPinned: data.isPinned ? 1 : 0,
       publishedAt: resolvePublishedAt(data.status, data.publishedAt),
     })
-    .$returningId();
+    .returning({ id: posts.id });
 
   const postId = inserted[0].id;
   await syncPostTags(postId, parseTagInput(data.tags));

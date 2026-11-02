@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUp, MessageSquare } from 'lucide-react';
@@ -82,7 +82,7 @@ export function ArticleProgress({ targetId = 'article-body' }: { targetId?: stri
           onClick={scrollToComments}
           title="直达评论区"
           aria-label="直达评论区"
-          className="grid h-10 w-10 place-items-center rounded-full border border-border/70 bg-card/90 text-muted-foreground shadow-md backdrop-blur transition-colors hover:border-primary/40 hover:text-primary"
+          className="grid h-10 w-10 place-items-center rounded-full border border-border/70 bg-card/90 text-muted-foreground shadow-md backdrop-blur-sm transition-colors hover:border-primary/40 hover:text-primary"
         >
           <MessageSquare className="h-4 w-4" />
         </button>
@@ -91,7 +91,7 @@ export function ArticleProgress({ targetId = 'article-body' }: { targetId?: stri
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           title="回到顶部"
           aria-label="回到顶部"
-          className="grid h-10 w-10 place-items-center rounded-full border border-border/70 bg-card/90 text-muted-foreground shadow-md backdrop-blur transition-colors hover:border-primary/40 hover:text-primary"
+          className="grid h-10 w-10 place-items-center rounded-full border border-border/70 bg-card/90 text-muted-foreground shadow-md backdrop-blur-sm transition-colors hover:border-primary/40 hover:text-primary"
         >
           <ArrowUp className="h-4 w-4" />
         </button>

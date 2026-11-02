@@ -33,7 +33,7 @@ export async function PUT(req: Request) {
     aboutSite: data.aboutSite ?? '',
     footerText: data.footerText ?? '',
     musicAutoplay: data.musicAutoplay === undefined ? 1 : data.musicAutoplay ? 1 : 0,
-    musicVolume: (data.musicVolume ?? 0.5).toFixed(2),
+    musicVolume: data.musicVolume ?? 0.5,
     updatedAt: new Date(),
   };
 

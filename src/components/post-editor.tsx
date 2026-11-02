@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -384,7 +384,7 @@ export function PostEditor({
                 onClick={trackCaret}
                 onKeyUp={trackCaret}
                 placeholder={'## 二级标题\n\n开始写作吧，支持 **加粗**、`代码`、列表与表格…'}
-                className="min-h-[460px] w-full resize-y bg-card px-4 py-4 font-mono text-sm leading-relaxed outline-none"
+                className="min-h-[460px] w-full resize-y bg-card px-4 py-4 font-mono text-sm leading-relaxed outline-hidden"
               />
             ) : (
               <div className="min-h-[460px] px-5 py-4">
@@ -412,7 +412,7 @@ export function PostEditor({
                   id="status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value as 'draft' | 'published')}
-                  className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus:border-primary/60"
+                  className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-hidden focus:border-primary/60"
                 >
                   <option value="draft">草稿</option>
                   <option value="published">已发布</option>
@@ -425,7 +425,7 @@ export function PostEditor({
                   id="category"
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-none focus:border-primary/60"
+                  className="h-10 w-full rounded-lg border border-input bg-card px-3 text-sm outline-hidden focus:border-primary/60"
                 >
                   <option value="">未分类</option>
                   {categories.map((category) => (
@@ -441,7 +441,7 @@ export function PostEditor({
                 <button
                   type="button"
                   onClick={() => setTagOpen((prev) => !prev)}
-                  className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-card px-3 py-2 text-left text-sm outline-none transition-colors focus:border-primary/60"
+                  className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-input bg-card px-3 py-2 text-left text-sm outline-hidden transition-colors focus:border-primary/60"
                 >
                   <span className={tags.length ? 'text-foreground' : 'text-muted-foreground'}>
                     {tags.length ? `已选 ${tags.length} 个标签` : '从分类与标签中选择'}
@@ -461,7 +461,7 @@ export function PostEditor({
                         value={tagQuery}
                         onChange={(e) => setTagQuery(e.target.value)}
                         placeholder="搜索标签"
-                        className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+                        className="w-full bg-transparent text-xs outline-hidden placeholder:text-muted-foreground"
                       />
                     </div>
                     <div className="max-h-52 overflow-y-auto p-1">

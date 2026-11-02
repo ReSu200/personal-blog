@@ -22,7 +22,8 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const profile = session ? await getUserById(session.id) : null;
 
   // 播放器拖拽位置存在 Cookie 中，服务端直接渲染，避免首屏从默认角落跳到保存位置
-  const savedPosition = parsePosition(cookies().get(PLAYER_POSITION_COOKIE)?.value);
+  const cookieStore = await cookies();
+  const savedPosition = parsePosition(cookieStore.get(PLAYER_POSITION_COOKIE)?.value);
 
   return (
     <div className="flex min-h-screen flex-col">

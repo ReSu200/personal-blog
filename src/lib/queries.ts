@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { and, asc, desc, eq, inArray, like, or, sql, count } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, inArray, like, lt, or, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { categories, comments, posts, postTags, settings, songs, tags, users } from '@/db/schema';
 import { DEFAULT_ABOUT_SITE } from '@/lib/utils';
@@ -24,7 +24,7 @@ export type SettingsData = {
   authorWechat: string | null;
   githubUrl: string | null;
   musicAutoplay: number;
-  musicVolume: string;
+  musicVolume: number;
 };
 
 const fallbackSettings: SettingsData = {
@@ -47,7 +47,7 @@ const fallbackSettings: SettingsData = {
   authorWechat: null,
   githubUrl: null,
   musicAutoplay: 1,
-  musicVolume: '0.50',
+  musicVolume: 0.5,
 };
 
 // 同一请求内 layout / page / 侧栏都会读取设置，用 cache 去重，避免重复查询
@@ -91,7 +91,7 @@ export const getSettings = cache(async (): Promise<SettingsData> => {
           latestCoverPosition: row.latestCoverPosition ?? '50% 50%',
           visitCount: Number(row.visitCount ?? 0),
           musicAutoplay: row.musicAutoplay ?? 1,
-          musicVolume: String(row.musicVolume ?? '0.50'),
+          musicVolume: row.musicVolume ?? 0.5,
         }
       : {
           id: fallbackSettings.id,
@@ -287,13 +287,13 @@ export async function getAdjacentPosts(post: { id: number; publishedAt: Date | n
     db
       .select({ title: posts.title, slug: posts.slug })
       .from(posts)
-      .where(and(eq(posts.status, 'published'), sql`${posts.publishedAt} < ${currentTime}`))
+      .where(and(eq(posts.status, 'published'), lt(posts.publishedAt, currentTime)))
       .orderBy(desc(posts.publishedAt))
       .limit(1),
     db
       .select({ title: posts.title, slug: posts.slug })
       .from(posts)
-      .where(and(eq(posts.status, 'published'), sql`${posts.publishedAt} > ${currentTime}`))
+      .where(and(eq(posts.status, 'published'), gt(posts.publishedAt, currentTime)))
       .orderBy(asc(posts.publishedAt))
       .limit(1),
   ]);

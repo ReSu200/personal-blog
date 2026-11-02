@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { Search, X } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
 import { PostCard } from '@/components/post-card';
@@ -19,11 +19,16 @@ type SearchParams = {
   tag?: string;
 };
 
-export default async function PostsPage({ searchParams }: { searchParams: SearchParams }) {
-  const page = Math.max(1, Number(searchParams.page) || 1);
-  const q = searchParams.q?.trim() || '';
-  const category = searchParams.category || '';
-  const tag = searchParams.tag || '';
+export default async function PostsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  const q = params.q?.trim() || '';
+  const category = params.category || '';
+  const tag = params.tag || '';
 
   const [data, categories, tags, settings] = await Promise.all([
     listPosts({ page, pageSize: 10, q, category, tag }),
@@ -55,7 +60,7 @@ export default async function PostsPage({ searchParams }: { searchParams: Search
               name="q"
               defaultValue={q}
               placeholder="搜索文章标题或摘要"
-              className="h-10 w-full rounded-full border border-input bg-card pl-10 pr-4 text-sm outline-none transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
+              className="h-10 w-full rounded-full border border-input bg-card pl-10 pr-4 text-sm outline-hidden transition-colors focus:border-primary/60 focus:ring-2 focus:ring-primary/20"
             />
             {category && <input type="hidden" name="category" value={category} />}
             {tag && <input type="hidden" name="tag" value={tag} />}

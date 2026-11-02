@@ -1,122 +1,135 @@
-import {
-  bigint,
-  datetime,
-  decimal,
-  int,
-  longtext,
-  mysqlEnum,
-  mysqlTable,
-  primaryKey,
-  text,
-  tinyint,
-  varchar,
-} from 'drizzle-orm/mysql-core';
-import { sql } from 'drizzle-orm';
+import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-const createdAt = () => datetime('created_at', { mode: 'date' }).notNull().default(sql`CURRENT_TIMESTAMP`);
-const updatedAt = () => datetime('updated_at', { mode: 'date' }).notNull().default(sql`CURRENT_TIMESTAMP`);
-
-export const users = mysqlTable('users', {
-  id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
-  username: varchar('username', { length: 50 }).notNull().unique(),
-  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
-  displayName: varchar('display_name', { length: 50 }),
-  avatarUrl: varchar('avatar_url', { length: 500 }),
-  githubUrl: varchar('github_url', { length: 500 }),
-  qq: varchar('qq', { length: 20 }),
-  wechat: varchar('wechat', { length: 50 }),
-  role: mysqlEnum('role', ['user', 'admin']).notNull().default('user'),
-  createdAt: createdAt(),
-  updatedAt: updatedAt(),
-});
-
-export const categories = mysqlTable('categories', {
-  id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
-  name: varchar('name', { length: 50 }).notNull().unique(),
-  slug: varchar('slug', { length: 50 }).notNull().unique(),
-});
-
-export const tags = mysqlTable('tags', {
-  id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
-  name: varchar('name', { length: 50 }).notNull().unique(),
-  slug: varchar('slug', { length: 50 }).notNull().unique(),
-});
-
-export const posts = mysqlTable('posts', {
-  id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
-  title: varchar('title', { length: 200 }).notNull(),
-  slug: varchar('slug', { length: 200 }).notNull().unique(),
-  content: longtext('content').notNull(),
-  summary: varchar('summary', { length: 500 }),
-  coverImage: varchar('cover_image', { length: 500 }),
-  coverPosition: varchar('cover_position', { length: 30 }).default('50% 50%'),
-  categoryId: bigint('category_id', { mode: 'number', unsigned: true }).references(() => categories.id),
-  authorId: bigint('author_id', { mode: 'number', unsigned: true })
+// SQLite 没有 DATETIME 类型，统一用整数存 Unix 时间戳（秒），Drizzle 读取时转成 Date
+const createdAt = () =>
+  integer('created_at', { mode: 'timestamp' })
     .notNull()
-    .references(() => users.id),
-  status: mysqlEnum('status', ['draft', 'published']).notNull().default('draft'),
-  isPinned: tinyint('is_pinned').notNull().default(0),
-  viewCount: int('view_count').notNull().default(0),
-  publishedAt: datetime('published_at', { mode: 'date' }),
+    .$defaultFn(() => new Date());
+
+const updatedAt = () =>
+  integer('updated_at', { mode: 'timestamp' })
+    .notNull()
+    .$defaultFn(() => new Date())
+    .$onUpdate(() => new Date());
+
+export const users = sqliteTable('users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  username: text('username').notNull().unique(),
+  passwordHash: text('password_hash').notNull(),
+  displayName: text('display_name'),
+  avatarUrl: text('avatar_url'),
+  githubUrl: text('github_url'),
+  qq: text('qq'),
+  wechat: text('wechat'),
+  role: text('role', { enum: ['user', 'admin'] })
+    .notNull()
+    .default('user'),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
 
-export const postTags = mysqlTable(
+export const categories = sqliteTable('categories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  slug: text('slug').notNull().unique(),
+});
+
+export const tags = sqliteTable('tags', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  slug: text('slug').notNull().unique(),
+});
+
+export const posts = sqliteTable(
+  'posts',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    title: text('title').notNull(),
+    slug: text('slug').notNull().unique(),
+    content: text('content').notNull(),
+    summary: text('summary'),
+    coverImage: text('cover_image'),
+    coverPosition: text('cover_position').default('50% 50%'),
+    categoryId: integer('category_id').references(() => categories.id, { onDelete: 'set null' }),
+    authorId: integer('author_id')
+      .notNull()
+      .references(() => users.id),
+    status: text('status', { enum: ['draft', 'published'] })
+      .notNull()
+      .default('draft'),
+    isPinned: integer('is_pinned').notNull().default(0),
+    viewCount: integer('view_count').notNull().default(0),
+    publishedAt: integer('published_at', { mode: 'timestamp' }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index('idx_posts_status_published').on(t.status, t.publishedAt),
+    index('idx_posts_category').on(t.categoryId),
+  ],
+);
+
+export const postTags = sqliteTable(
   'post_tags',
   {
-    postId: bigint('post_id', { mode: 'number', unsigned: true })
+    postId: integer('post_id')
       .notNull()
       .references(() => posts.id, { onDelete: 'cascade' }),
-    tagId: bigint('tag_id', { mode: 'number', unsigned: true })
+    tagId: integer('tag_id')
       .notNull()
       .references(() => tags.id, { onDelete: 'cascade' }),
   },
-  (t) => ({ pk: primaryKey({ columns: [t.postId, t.tagId] }) }),
+  (t) => [primaryKey({ columns: [t.postId, t.tagId] })],
 );
 
-export const comments = mysqlTable('comments', {
-  id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
-  postId: bigint('post_id', { mode: 'number', unsigned: true })
-    .notNull()
-    .references(() => posts.id, { onDelete: 'cascade' }),
-  userId: bigint('user_id', { mode: 'number', unsigned: true })
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  parentId: bigint('parent_id', { mode: 'number', unsigned: true }),
-  content: text('content').notNull(),
-  status: mysqlEnum('status', ['pending', 'approved', 'rejected']).notNull().default('pending'),
+export const comments = sqliteTable(
+  'comments',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    postId: integer('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    parentId: integer('parent_id'),
+    content: text('content').notNull(),
+    status: text('status', { enum: ['pending', 'approved', 'rejected'] })
+      .notNull()
+      .default('pending'),
+    createdAt: createdAt(),
+  },
+  (t) => [index('idx_comments_post_status').on(t.postId, t.status)],
+);
+
+export const songs = sqliteTable('songs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  artist: text('artist'),
+  filePath: text('file_path').notNull(),
+  coverUrl: text('cover_url'),
+  duration: real('duration'),
+  isDefault: integer('is_default').notNull().default(0),
+  sortOrder: integer('sort_order').notNull().default(0),
   createdAt: createdAt(),
 });
 
-export const songs = mysqlTable('songs', {
-  id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
-  title: varchar('title', { length: 200 }).notNull(),
-  artist: varchar('artist', { length: 100 }),
-  filePath: varchar('file_path', { length: 500 }).notNull(),
-  coverUrl: varchar('cover_url', { length: 500 }),
-  duration: decimal('duration', { precision: 10, scale: 2 }),
-  isDefault: tinyint('is_default').notNull().default(0),
-  sortOrder: int('sort_order').notNull().default(0),
-  createdAt: createdAt(),
-});
-
-export const settings = mysqlTable('settings', {
-  id: bigint('id', { mode: 'number', unsigned: true }).autoincrement().primaryKey(),
-  siteName: varchar('site_name', { length: 100 }),
-  siteDescription: varchar('site_description', { length: 500 }),
+export const settings = sqliteTable('settings', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  siteName: text('site_name'),
+  siteDescription: text('site_description'),
   aboutSite: text('about_site'),
-  footerText: varchar('footer_text', { length: 300 }),
-  logoUrl: varchar('logo_url', { length: 500 }),
-  heroBackground: varchar('hero_background', { length: 500 }),
-  heroPosition: varchar('hero_position', { length: 30 }).default('50% 50%'),
-  featuredCover: varchar('featured_cover', { length: 500 }),
-  featuredCoverPosition: varchar('featured_cover_position', { length: 30 }).default('50% 50%'),
-  latestCover: varchar('latest_cover', { length: 500 }),
-  latestCoverPosition: varchar('latest_cover_position', { length: 30 }).default('50% 50%'),
-  visitCount: bigint('visit_count', { mode: 'number', unsigned: true }).notNull().default(0),
-  musicAutoplay: tinyint('music_autoplay').notNull().default(1),
-  musicVolume: decimal('music_volume', { precision: 3, scale: 2 }).notNull().default('0.50'),
+  footerText: text('footer_text'),
+  logoUrl: text('logo_url'),
+  heroBackground: text('hero_background'),
+  heroPosition: text('hero_position').default('50% 50%'),
+  featuredCover: text('featured_cover'),
+  featuredCoverPosition: text('featured_cover_position').default('50% 50%'),
+  latestCover: text('latest_cover'),
+  latestCoverPosition: text('latest_cover_position').default('50% 50%'),
+  visitCount: integer('visit_count').notNull().default(0),
+  musicAutoplay: integer('music_autoplay').notNull().default(1),
+  musicVolume: real('music_volume').notNull().default(0.5),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

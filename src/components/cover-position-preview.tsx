@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -127,7 +127,7 @@ export function CoverPositionPreview({
         onPointerCancel={endDrag}
         onKeyDown={onKeyDown}
         className={cn(
-          'group relative aspect-[16/10] w-full touch-none select-none outline-none',
+          'group relative aspect-[16/10] w-full touch-none select-none outline-hidden',
           dragging ? 'cursor-grabbing' : 'cursor-grab',
           'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         )}
@@ -143,7 +143,7 @@ export function CoverPositionPreview({
         <div
           aria-hidden
           className={cn(
-            'pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-slate-950/65 to-transparent px-3 pb-2 pt-8 text-[11px] text-white transition-opacity',
+            'pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-linear-to-t from-slate-950/65 to-transparent px-3 pb-2 pt-8 text-[11px] text-white transition-opacity',
             dragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100',
           )}
         >

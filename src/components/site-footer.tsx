@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Github, Rss } from 'lucide-react';
+import { Rss } from 'lucide-react';
+import { Github } from '@/components/icons';
 
 type Props = {
   siteName: string;

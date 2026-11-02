@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { ArrowRight, Github, MessageCircle, MessageSquare } from 'lucide-react';
+import { ArrowRight, MessageCircle, MessageSquare } from 'lucide-react';
+import { Github } from '@/components/icons';
 import { Card } from '@/components/ui';
 import { HeroCover } from '@/components/hero-cover';
 import { UserAvatar } from '@/components/user-avatar';

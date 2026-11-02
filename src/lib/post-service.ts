@@ -21,7 +21,7 @@ export async function ensureTagIds(names: string[]) {
     const finalSlug = slugTaken[0] ? `${baseSlug}-${Date.now().toString().slice(-4)}` : baseSlug;
 
     try {
-      const inserted = await db.insert(tags).values({ name, slug: finalSlug }).$returningId();
+      const inserted = await db.insert(tags).values({ name, slug: finalSlug }).returning({ id: tags.id });
       ids.push(inserted[0].id);
     } catch {
       const again = await db.select({ id: tags.id }).from(tags).where(eq(tags.name, name)).limit(1);

@@ -20,11 +20,15 @@ const schema = z.object({
   tags: z.string().optional(),
 });
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { response } = await guardAdmin();
   if (response) return response;
 
-  const id = Number(params.id);
+  const { id: rawId } = await params;
+  const id = Number(rawId);
   if (!Number.isFinite(id)) {
     return NextResponse.json({ error: '文章 ID 不合法' }, { status: 400 });
   }
@@ -78,11 +82,15 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json({ ok: true, id, slug });
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { response } = await guardAdmin();
   if (response) return response;
 
-  const id = Number(params.id);
+  const { id: rawId } = await params;
+  const id = Number(rawId);
   if (!Number.isFinite(id)) {
     return NextResponse.json({ error: '文章 ID 不合法' }, { status: 400 });
   }

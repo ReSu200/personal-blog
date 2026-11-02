@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -99,7 +99,7 @@ export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl 
         </Link>
 
         {/* 中：主导航 */}
-        <nav className="hidden items-center gap-0.5 rounded-full border border-border/60 bg-card/70 p-1 shadow-sm backdrop-blur md:flex">
+        <nav className="hidden items-center gap-1 md:flex">
           {navItems.map((item) => {
             const active = isActive(item.href);
             return (
@@ -110,7 +110,7 @@ export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl 
                   'rounded-full px-4 py-1.5 text-sm transition-all duration-200',
                   active
                     ? 'bg-primary/10 font-medium text-primary'
-                    : 'text-muted-foreground hover:bg-accent/70 hover:text-foreground',
+                    : 'text-foreground/70 hover:bg-accent/70 hover:text-foreground',
                 )}
               >
                 {item.label}
@@ -149,7 +149,7 @@ export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl 
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-border/70 bg-card/95 p-1.5 shadow-xl backdrop-blur animate-fade-in-up"
+                  className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-border/70 bg-card/95 p-1.5 shadow-xl backdrop-blur-sm animate-fade-in-up"
                 >
                   <div className="px-2 py-1.5">
                     <p className="truncate text-sm font-medium">{displayName}</p>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -81,7 +81,7 @@ export function AuthForm({ redirectTo, mode }: Props) {
 
       <div className="relative">
         <div className="mb-6 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 font-serif text-lg font-bold text-white shadow-sm">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-teal-500 to-cyan-600 font-serif text-lg font-bold text-white shadow-xs">
             {isLogin ? '登' : '注'}
           </div>
           <p className="eyebrow mt-4">{isLogin ? 'Welcome back' : 'Join us'}</p>

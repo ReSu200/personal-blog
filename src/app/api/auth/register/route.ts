@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   const inserted = await db
     .insert(users)
     .values({ username, passwordHash, displayName: username, avatarUrl, role: 'user' })
-    .$returningId();
+    .returning({ id: users.id });
 
   await setSessionCookie({ id: inserted[0].id, username, role: 'user' });
   return NextResponse.json({

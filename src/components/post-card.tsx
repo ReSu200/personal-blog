@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { CalendarDays, Eye, Pin } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import type { PostListItem } from '@/lib/queries';
@@ -128,7 +128,7 @@ export function PostGridCard({
             </div>
           )}
           {post.isPinned === 1 && (
-            <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2.5 py-0.5 text-[11px] font-medium text-white shadow-sm">
+            <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2.5 py-0.5 text-[11px] font-medium text-white shadow-xs">
               <Pin className="h-3 w-3" /> 置顶
             </span>
           )}
@@ -189,7 +189,7 @@ export function FeaturedPostCard({
             style={position ? { objectPosition: position } : undefined}
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/35 to-slate-950/10" />
+          <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-slate-950/35 to-slate-950/10" />
         </>
       ) : (
         <div className="hero-canvas absolute inset-0" />
@@ -198,7 +198,7 @@ export function FeaturedPostCard({
       <div className="relative">
         <span
           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-            cover ? 'bg-white/20 text-white/90 backdrop-blur' : 'bg-card/70 text-primary'
+            cover ? 'bg-white/20 text-white/90 backdrop-blur-sm' : 'bg-card/70 text-primary'
           }`}
         >
           <Pin className="h-3 w-3" /> 推荐

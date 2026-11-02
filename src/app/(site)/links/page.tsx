@@ -1,4 +1,5 @@
-import { ArrowUpRight, Github, Link2, Mail } from 'lucide-react';
+import { ArrowUpRight, Link2, Mail } from 'lucide-react';
+import { Github } from '@/components/icons';
 import { Card } from '@/components/ui';
 import { getSettings } from '@/lib/queries';
 

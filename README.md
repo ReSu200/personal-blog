@@ -1,19 +1,20 @@
 # 青柠小站 · 个人博客
 
-基于 Next.js 14（App Router）+ MySQL 8.4 的前后端一体个人博客，包含前台顶部导航阅读界面、后台管理系统、评论审核与背景音乐播放器。
+基于 Next.js 16（App Router）+ SQLite 的前后端一体个人博客，包含前台顶部导航阅读界面、后台管理系统、评论审核与背景音乐播放器。
 
 ## 技术栈
 
 | 层级 | 技术 |
 | --- | --- |
-| 框架 | Next.js 14.2（App Router）+ TypeScript |
-| 样式 | Tailwind CSS 3 + 自建 shadcn 风格组件 |
-| 数据库 | MySQL 8.4（utf8mb4） |
-| ORM | Drizzle ORM + mysql2 |
+| 框架 | Next.js 16.4（App Router）+ React 19 + TypeScript 5.9 |
+| 样式 | Tailwind CSS 4（CSS-first 配置）+ 自建 shadcn 风格组件 |
+| 数据库 | SQLite（单文件，WAL 模式） |
+| ORM | Drizzle ORM + better-sqlite3 |
 | 认证 | 用户名 + 密码，bcrypt 加密，JWT 存 HttpOnly Cookie（jose） |
 | Markdown | react-markdown + remark-gfm + rehype-highlight |
 | 图标 | lucide-react |
 | 主题 | next-themes（跟随系统 / 手动切换） |
+| 校验 | Zod |
 
 ## 快速开始
 
@@ -21,11 +22,11 @@
 # 1. 安装依赖
 npm install
 
-# 2. 配置数据库连接
+# 2. 配置数据库文件
 #    复制 .env.example 为 .env.local 并按需修改
-#    （仓库中已提供可直接使用的 .env.local）
+#    （仓库中已提供可直接使用的 .env.local，默认 DB_FILE=./data/blog.db）
 
-# 3. 初始化数据库（建表 + 外键 + 初始数据）
+# 3. 初始化数据库（建表 + 索引 + 初始数据，幂等）
 npm run db:init
 
 # 4. 启动开发服务器
@@ -37,17 +38,18 @@ npm run dev
 ## 环境变量
 
 ```env
-DB_HOST=10.10.10.111
-DB_PORT=3306
-DB_USER=blog_user
-DB_PASSWORD=Blog@2026
-DB_NAME=personal_blog
+# SQLite 数据库文件（相对路径基于项目根目录，目录会自动创建）
+DB_FILE=./data/blog.db
 
 AUTH_SECRET=请替换为随机长字符串
 AUTH_COOKIE_NAME=blog_session
 
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
+
+> 数据库是单个文件，备份只需复制 `data/blog.db`（连同 `blog.db-wal` / `blog.db-shm`，或先停服）。
+
+> 历史数据：已从 MySQL（`10.10.10.111` 的 `personal_blog`）完整导入当前 SQLite，包含 3 个用户、5 篇文章、5 条评论、8 个标签、4 个分类、音乐与站点设置；导入前的库文件已备份为 `data/backup-*.db`。旧 `settings` 里的 `author_name` / `author_avatar` / `github_url` 已废弃，作者信息统一取自管理员账号资料。
 
 ## 默认账号
 
@@ -90,6 +92,8 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 ## 数据库表
 
+SQLite 类型约定：主键为 `INTEGER PRIMARY KEY AUTOINCREMENT`，时间戳统一存 Unix 秒（Drizzle `integer({ mode: 'timestamp' })` 自动转 `Date`），布尔值用 `0/1`（`is_pinned`、`is_default`、`music_autoplay`），音乐时长为 `REAL`。连接层开启 `journal_mode = WAL` 与 `PRAGMA foreign_keys = ON`。
+
 | 表 | 说明 |
 | --- | --- |
 | `users` | 用户（username、password_hash、display_name、avatar_url、github_url、qq、wechat、role） |
@@ -124,26 +128,33 @@ src/
 │   ├── icon.png             # 站点 favicon（Logo 居中裁方）
 │   └── globals.css          # 设计令牌、通栏工具类、波浪动画
 ├── components/              # 布局、卡片、播放器、编辑器、管理组件
-├── db/                      # Drizzle schema 与连接池
+├── db/                      # Drizzle schema 与 better-sqlite3 连接
 ├── lib/                     # 认证、查询、限流、工具
-└── middleware.ts            # /admin 路由保护
-scripts/init-db.mjs          # 建表 + 外键 + 初始数据
+└── proxy.ts                 # Next 16 Proxy，保护 /admin
+scripts/init-db.mjs          # SQLite 建表 + 索引 + 初始数据
 public/music/                # 上传的音频文件
+data/blog.db                 # SQLite 数据库（已加入 .gitignore）
 ```
 
 ## 常用命令
 
 ```bash
-npm run dev       # 开发模式
-npm run build     # 生产构建
+npm run dev       # 开发模式（next dev --webpack）
+npm run build     # 生产构建（next build --webpack）
 npm run start     # 生产启动
-npm run db:init   # 建表 + 补外键 + 初始化数据（幂等）
-npm run smoke     # 接口冒烟测试（需先启动 dev）
+npm run db:init   # 建表 + 索引 + 初始化数据（幂等）
+npm run smoke     # 接口冒烟测试（需先启动 dev，共 24 项）
 ```
+
+> `better-sqlite3` 是原生模块，已在 `next.config.mjs` 中声明为 `serverExternalPackages`（交给 Node 直接加载、不参与打包）。当前开发环境下 Turbopack 复制外部模块时会生成不可用的 junction，因此 `dev` / `build` 显式使用 `--webpack`；在正常环境可自行去掉该参数。
 
 ## 实现说明
 
-- **认证**：Better Auth 强制要求 email 字段，与「仅用户名注册」需求冲突，因此采用 bcrypt + jose JWT + HttpOnly Cookie 的轻量方案；`middleware.ts` 校验 `role === 'admin'` 保护 `/admin`。
+- **认证**：Better Auth 强制要求 email 字段，与「仅用户名注册」需求冲突，因此采用 bcrypt + jose JWT + HttpOnly Cookie 的轻量方案；`src/proxy.ts`（Next 16 Proxy，替代旧版 `middleware.ts`）校验 `role === 'admin'` 保护 `/admin`。
+- **Next 16 约定**：`cookies()`、页面 `params` / `searchParams` 均为异步，统一 `await`；`proxy.ts` 只能导出 `proxy` 函数与 `config`，不做运行时裁剪。
+- **Tailwind 4**：使用 CSS-first 配置，设计令牌集中在 `src/app/globals.css`（`@theme inline` + `@utility`），不再需要 `tailwind.config.ts`。
+- **SQLite 访问**：`better-sqlite3` 为同步驱动，`src/db/index.ts` 用 `globalThis` 缓存连接避免开发热更新重复打开文件；时间戳比较请使用 Drizzle 的 `lt` / `gt`（会自动做 `Date → 秒` 转换），不要在 `sql` 模板里直接插 `Date`（驱动只接受 number / string / bigint / Buffer / null）。
+- **MySQL → SQLite 字段映射**：`DATETIME` → `INTEGER`（Unix 秒）、`bigint` → `INTEGER`、`tinyint(1)` → `INTEGER`（0/1）、`decimal` → `REAL`、`enum` → `TEXT` + `CHECK`；主键保留原 id，关联表（`post_tags`、`comments.parent_id`）因此无需重算。
 - **验证码**：`/api/auth/captcha` 返回随机 4 位字符的 SVG（含旋转、干扰线、噪点），答案经 HMAC 签名后写入 HttpOnly Cookie，登录时服务端校验并立即失效。
 - **头像**：内置 4 款头像图片（`public/avatars/avatar-1.png` ~ `avatar-4.png`，标识 `avatar-1` ~ `avatar-4`），注册时默认分配第一款，个人中心可切换或上传自定义图片。
 - **登录态同步**：登录、退出、保存资料后使用整页跳转，保证顶部账号区、评论头像等立即更新，无需手动刷新。

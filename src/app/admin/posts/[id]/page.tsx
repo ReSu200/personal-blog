@@ -6,8 +6,9 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = { title: '编辑文章' };
 
-export default async function EditPostPage({ params }: { params: { id: string } }) {
-  const id = Number(params.id);
+export default async function EditPostPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rawId } = await params;
+  const id = Number(rawId);
   if (!Number.isFinite(id)) notFound();
 
   const [post, categories, tags] = await Promise.all([

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -113,7 +113,7 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
     },
   });
 
-  const coverInputs: Record<CoverKind, React.RefObject<HTMLInputElement>> = {
+  const coverInputs: Record<CoverKind, React.RefObject<HTMLInputElement | null>> = {
     featured: featuredInputRef,
     latest: latestInputRef,
   };
@@ -681,7 +681,7 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
       </Card>
 
       <div className="sticky bottom-4 z-10">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card/85 px-4 py-3 shadow-lg backdrop-blur">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-card/85 px-4 py-3 shadow-lg backdrop-blur-sm">
           <div className="min-w-0">
             <p className="text-sm font-medium">保存更改</p>
             <p className="mt-0.5 text-xs text-muted-foreground">

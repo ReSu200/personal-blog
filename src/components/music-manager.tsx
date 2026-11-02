@@ -21,7 +21,7 @@ type Song = {
   artist: string | null;
   filePath: string;
   coverUrl: string | null;
-  duration: string | null;
+  duration: number | null;
   isDefault: number;
   sortOrder: number;
 };

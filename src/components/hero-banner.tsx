@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -41,11 +41,11 @@ export function HeroBanner({ siteName, siteDescription, backgroundImage, backgro
         <>
           <div
             aria-hidden
-            className="absolute inset-0 bg-gradient-to-b from-slate-950/55 via-slate-950/40 to-slate-950/60"
+            className="absolute inset-0 bg-linear-to-b from-slate-950/55 via-slate-950/40 to-slate-950/60"
           />
           <div
             aria-hidden
-            className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-background/80 to-transparent"
+            className="absolute inset-x-0 top-0 h-28 bg-linear-to-b from-background/80 to-transparent"
           />
         </>
       )}
@@ -63,7 +63,7 @@ export function HeroBanner({ siteName, siteDescription, backgroundImage, backgro
       <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 pb-24 pt-24 text-center sm:px-10">
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-[0.24em] backdrop-blur',
+            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-[0.24em] backdrop-blur-sm',
             hasImage
               ? 'border-white/25 bg-white/10 text-white/90'
               : 'border-primary/20 bg-card/70 text-primary',
@@ -97,7 +97,7 @@ export function HeroBanner({ siteName, siteDescription, backgroundImage, backgro
               'group mt-6 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-medium transition-all duration-300',
               hasImage
                 ? 'bg-white/95 text-slate-900 hover:bg-white'
-                : 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-md',
+                : 'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 hover:shadow-md',
             )}
           >
             开始阅读

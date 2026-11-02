@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   const { username, password, captcha } = parsed.data;
 
   // 校验验证码（一次性，使用后立即失效）
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const captchaCookie = cookieStore.get(CAPTCHA_COOKIE)?.value;
   const captchaOk = verifyCaptcha(captchaCookie, captcha);
   cookieStore.set(CAPTCHA_COOKIE, '', { path: '/', maxAge: 0 });

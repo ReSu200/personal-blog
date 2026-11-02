@@ -18,10 +18,11 @@ const filters = [
 export default async function AdminCommentsPage({
   searchParams,
 }: {
-  searchParams: { status?: string };
+  searchParams: Promise<{ status?: string }>;
 }) {
-  const status = ['pending', 'approved', 'rejected'].includes(searchParams.status ?? '')
-    ? (searchParams.status as 'pending' | 'approved' | 'rejected')
+  const params = await searchParams;
+  const status = ['pending', 'approved', 'rejected'].includes(params.status ?? '')
+    ? (params.status as 'pending' | 'approved' | 'rejected')
     : undefined;
 
   const comments = await adminListComments(status);
@@ -38,7 +39,7 @@ export default async function AdminCommentsPage({
 
       <div className="flex flex-wrap gap-2">
         {filters.map((filter) => {
-          const active = filter.key === (searchParams.status ?? 'all');
+          const active = filter.key === (params.status ?? 'all');
           return (
             <Link
               key={filter.key}

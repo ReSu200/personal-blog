@@ -18,11 +18,15 @@ const schema = z.object({
   sortOrder: z.number().int().optional(),
 });
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { response } = await guardAdmin();
   if (response) return response;
 
-  const id = Number(params.id);
+  const { id: rawId } = await params;
+  const id = Number(rawId);
   if (!Number.isFinite(id)) {
     return NextResponse.json({ error: '歌曲 ID 不合法' }, { status: 400 });
   }
@@ -46,7 +50,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       ...(data.artist !== undefined ? { artist: data.artist } : {}),
       ...(data.coverUrl !== undefined ? { coverUrl: data.coverUrl } : {}),
       ...(data.duration !== undefined
-        ? { duration: data.duration === null ? null : data.duration.toFixed(2) }
+        ? { duration: data.duration === null ? null : Math.round(data.duration * 100) / 100 }
         : {}),
       ...(data.isDefault !== undefined ? { isDefault: data.isDefault ? 1 : 0 } : {}),
       ...(data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),
@@ -56,11 +60,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { response } = await guardAdmin();
   if (response) return response;
 
-  const id = Number(params.id);
+  const { id: rawId } = await params;
+  const id = Number(rawId);
   if (!Number.isFinite(id)) {
     return NextResponse.json({ error: '歌曲 ID 不合法' }, { status: 400 });
   }

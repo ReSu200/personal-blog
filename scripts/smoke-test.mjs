@@ -3,7 +3,9 @@
  * 前置：npm run dev 已启动（默认 3000 端口，可用 BASE_URL 覆盖）
  */
 import dotenv from 'dotenv';
-import mysql from 'mysql2/promise';
+import fs from 'node:fs';
+import path from 'node:path';
+import Database from 'better-sqlite3';
 
 dotenv.config({ path: '.env.local' });
 
@@ -76,14 +78,25 @@ class Client {
   }
 }
 
-const conn = await mysql.createConnection({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  charset: 'utf8mb4',
-});
+const dbFile = path.resolve(process.env.DB_FILE || path.join(process.cwd(), 'data', 'blog.db'));
+if (!fs.existsSync(dbFile)) {
+  console.error(`数据库文件不存在：${dbFile}\n请先执行 npm run db:init`);
+  process.exit(1);
+}
+const sqlite = new Database(dbFile);
+sqlite.pragma('foreign_keys = ON');
+// 保留 query() 的返回形态（[rows]），让下面的断言代码无需改动
+const conn = {
+  query: async (sql, params = []) => {
+    const stmt = sqlite.prepare(sql);
+    if (!stmt.reader) {
+      stmt.run(...params);
+      return [[]];
+    }
+    return [stmt.all(...params)];
+  },
+  end: async () => sqlite.close(),
+};
 
 let testUsername = '';
 

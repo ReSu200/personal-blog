@@ -4,7 +4,8 @@ import { jwtVerify } from 'jose';
 const secret = new TextEncoder().encode(process.env.AUTH_SECRET || 'dev-secret-change-me');
 const cookieName = process.env.AUTH_COOKIE_NAME || 'blog_session';
 
-export async function middleware(req: NextRequest) {
+// Next 16 用 proxy.ts 取代 middleware.ts，运行在 Node.js 运行时
+export async function proxy(req: NextRequest) {
   const token = req.cookies.get(cookieName)?.value;
   let isAdmin = false;
 

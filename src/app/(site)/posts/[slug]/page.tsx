@@ -20,8 +20,13 @@ import { formatDate, readingTime } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
-  const detail = await getPostBySlug(decodeURIComponent(params.slug));
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const detail = await getPostBySlug(decodeURIComponent(slug));
   if (!detail) return { title: '文章不存在' };
   return {
     title: detail.post.title,
@@ -29,9 +34,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function PostDetailPage({ params }: { params: { slug: string } }) {
-  const slug = decodeURIComponent(params.slug);
-  const detail = await getPostBySlug(slug);
+export default async function PostDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
+  const detail = await getPostBySlug(decodedSlug);
   if (!detail || detail.post.status !== 'published') notFound();
 
   const post = detail.post;
