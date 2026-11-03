@@ -22,9 +22,10 @@ function buildHref(basePath: string, query: Record<string, string | undefined>, 
 export function Pagination({ page, totalPages, basePath, query = {} }: Props) {
   if (totalPages <= 1) return null;
 
-  const pages = Array.from({ length: totalPages }, (_, i) => i + 1).filter(
-    (p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1,
-  );
+  // 只保留首页、末页与当前页附近，避免按总页数构造整段数组
+  const pages = [...new Set([1, page - 1, page, page + 1, totalPages])]
+    .filter((p) => p >= 1 && p <= totalPages)
+    .sort((a, b) => a - b);
 
   return (
     <div className="mt-8 flex items-center justify-center gap-1.5">

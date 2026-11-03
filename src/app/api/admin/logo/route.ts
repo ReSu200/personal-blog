@@ -68,10 +68,12 @@ export async function POST(req: Request) {
 
   const fileName = `logo-${randomUUID()}${ext}`;
   const dir = path.join(process.cwd(), 'public', 'uploads');
+  // 旧 logo 的读取与文件写入互不依赖，并行发起
+  const previousPromise = getCurrentLogo();
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(path.join(dir, fileName), Buffer.from(await file.arrayBuffer()));
 
-  const previous = await getCurrentLogo();
+  const previous = await previousPromise;
   const logoUrl = `/uploads/${fileName}`;
   await saveLogo(logoUrl);
   await removeUploadedFile(previous);

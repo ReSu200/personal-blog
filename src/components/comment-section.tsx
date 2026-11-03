@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { MessageSquare, Reply, Send } from 'lucide-react';
 import { Button, Card, Textarea } from '@/components/ui';
 import { UserAvatar } from '@/components/user-avatar';
@@ -17,7 +16,6 @@ type Props = {
 };
 
 export function CommentSection({ postId, comments, session }: Props) {
-  const router = useRouter();
   const [content, setContent] = useState('');
   const [replyTo, setReplyTo] = useState<{ id: number; username: string } | null>(null);
   const [message, setMessage] = useState('');
@@ -60,7 +58,7 @@ export function CommentSection({ postId, comments, session }: Props) {
       setMessage(data.message ?? '评论已提交，等待管理员审核');
       setContent('');
       setReplyTo(null);
-      router.refresh();
+      // 新评论需审核后才展示，前端列表不会有变化，无需刷新整页
     } catch {
       setError('网络异常，请稍后再试');
     } finally {

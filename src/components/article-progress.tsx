@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 export function ArticleProgress({ targetId = 'article-body' }: { targetId?: string }) {
   const barRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const visibleRef = useRef(false);
 
   useEffect(() => {
     let frame = 0;
@@ -30,7 +31,12 @@ export function ArticleProgress({ targetId = 'article-body' }: { targetId?: stri
       const clamped = Math.min(1, Math.max(0, ratio));
       // 直接写 transform，绕开 React 渲染且只走合成层
       if (barRef.current) barRef.current.style.transform = `scaleX(${clamped})`;
-      setVisible(window.scrollY > 320);
+      // 只有跨过阈值才更新 React 状态，滚动过程中不触发重渲染
+      const nextVisible = window.scrollY > 320;
+      if (nextVisible !== visibleRef.current) {
+        visibleRef.current = nextVisible;
+        setVisible(nextVisible);
+      }
     };
 
     const onScroll = () => {

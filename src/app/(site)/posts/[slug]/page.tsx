@@ -39,6 +39,11 @@ export async function generateMetadata({
 export default async function PostDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
+
+  // 站点设置与登录态和文章内容无关，先发起请求，避免在文章查询后再等一次
+  const settingsPromise = getSettings();
+  const sessionPromise = getSession();
+
   const detail = await getPostBySlug(decodedSlug);
   if (!detail || detail.post.status !== 'published') notFound();
 
@@ -49,9 +54,9 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
 
   const [comments, session, adjacent, settings] = await Promise.all([
     getApprovedComments(post.id),
-    getSession(),
+    sessionPromise,
     getAdjacentPosts({ id: post.id, publishedAt: post.publishedAt }),
-    getSettings(),
+    settingsPromise,
   ]);
   const toc = extractToc(post.content);
 

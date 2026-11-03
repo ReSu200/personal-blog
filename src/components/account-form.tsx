@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Check, Loader2, Save, ShieldCheck, Upload } from 'lucide-react';
 import { Button, Card, Input, Label } from '@/components/ui';
 import { AVATAR_PRESETS, UserAvatar, presetAvatarSrc } from '@/components/user-avatar';
@@ -22,6 +23,7 @@ type Props = {
 const MAX_AVATAR_SIZE = 1024 * 1024;
 
 export function AccountForm({ user }: Props) {
+  const router = useRouter();
   const [username, setUsername] = useState(user.username);
   const [displayName, setDisplayName] = useState(user.displayName);
   const [githubUrl, setGithubUrl] = useState(user.githubUrl);
@@ -103,9 +105,9 @@ export function AccountForm({ user }: Props) {
         setProfileError(data.error ?? '保存失败');
         return;
       }
-      setProfileMessage('资料保存成功，正在刷新…');
-      // 账号信息变更后整页刷新，确保侧边栏与评论区的头像、昵称同步
-      window.setTimeout(() => window.location.reload(), 900);
+      setProfileMessage('资料保存成功');
+      // 只刷新服务端组件，让侧栏与评论区的头像、昵称同步，避免整页重载
+      router.refresh();
     } catch {
       setProfileError('网络异常，请稍后再试');
     } finally {

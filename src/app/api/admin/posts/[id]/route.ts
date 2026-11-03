@@ -35,13 +35,16 @@ export async function PUT(
     return NextResponse.json({ error: '文章 ID 不合法' }, { status: 400 });
   }
 
-  const existingRows = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
+  // 读取旧文章与解析请求体互不依赖，一起发起
+  const [existingRows, body] = await Promise.all([
+    db.select().from(posts).where(eq(posts.id, id)).limit(1),
+    req.json().catch(() => null),
+  ]);
   const existing = existingRows[0];
   if (!existing) {
     return NextResponse.json({ error: '文章不存在' }, { status: 404 });
   }
 
-  const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? '参数不合法' }, { status: 400 });

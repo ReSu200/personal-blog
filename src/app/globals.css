@@ -151,13 +151,12 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: 'kern' 1;
-    text-rendering: optimizeLegibility;
   }
 }
 
 /* 白纸卡片：极浅描边 + 柔和投影，替代厚重的深色阴影 */
 @utility card-surface {
-  @apply rounded-2xl border border-border/70 bg-card transition-all duration-300;
+  @apply rounded-2xl border border-border/70 bg-card transition-[transform,box-shadow,border-color] duration-300;
   box-shadow:
     0 1px 2px hsl(190 30% 20% / 0.04),
     0 18px 40px -32px hsl(190 35% 20% / 0.35);

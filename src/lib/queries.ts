@@ -501,23 +501,23 @@ export async function adminListComments(status?: 'pending' | 'approved' | 'rejec
 }
 
 export async function adminDashboard() {
-  const [postRows, publishedRows, commentRows, pendingRows, songRows] = await Promise.all([
+  const [postRows, publishedRows, commentRows, pendingRows, songRows, recent] = await Promise.all([
     db.select({ value: count() }).from(posts),
     db.select({ value: count() }).from(posts).where(eq(posts.status, 'published')),
     db.select({ value: count() }).from(comments),
     db.select({ value: count() }).from(comments).where(eq(comments.status, 'pending')),
     db.select({ value: count() }).from(songs),
+    db
+      .select({
+        id: posts.id,
+        title: posts.title,
+        status: posts.status,
+        updatedAt: posts.updatedAt,
+      })
+      .from(posts)
+      .orderBy(desc(posts.updatedAt))
+      .limit(5),
   ]);
-  const recent = await db
-    .select({
-      id: posts.id,
-      title: posts.title,
-      status: posts.status,
-      updatedAt: posts.updatedAt,
-    })
-    .from(posts)
-    .orderBy(desc(posts.updatedAt))
-    .limit(5);
 
   return {
     posts: Number(postRows[0]?.value ?? 0),

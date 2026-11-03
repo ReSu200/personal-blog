@@ -6,8 +6,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: '音乐管理' };
 
 export default async function AdminMusicPage() {
-  const songs = await listSongs();
-  const settings = await getSettings();
+  const [songs, settings] = await Promise.all([listSongs(), getSettings()]);
 
   return (
     <div className="space-y-5">

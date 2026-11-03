@@ -35,7 +35,13 @@ export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl 
 
   // 下滑后加强毛玻璃与描边，形成固定状态栏效果
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    let last = false;
+    const onScroll = () => {
+      const next = window.scrollY > 8;
+      if (next === last) return;
+      last = next;
+      setScrolled(next);
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
