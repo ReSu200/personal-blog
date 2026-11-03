@@ -168,7 +168,7 @@ npm test          # 组件单元测试（Vitest + Testing Library）
 - **封面焦点**：位置以 `"x% y%"` 字符串存储，前端直接用 `object-position` 渲染；文章自带封面时用文章自己的 `cover_position`，无封面时才回退站点默认封面的位置。
 - **默认文案**：「关于这个站点」的默认内容定义在 `src/lib/utils.ts` 的 `DEFAULT_ABOUT_SITE`，数据库为空时前台用它兜底、后台输入框用它做占位提示（因此输入框默认是空的，无需手动清空）。
 - **删除确认**：破坏性操作统一走 `src/components/confirm-dialog.tsx` 的 `ConfirmDialog`（遮罩点击 / Esc / 自动聚焦确认按钮，错误文案显示在弹层内），不再使用 `window.confirm` / `window.alert`；IDE 等内嵌浏览器弹出原生对话框时会直接崩溃。新增删除入口请复用该组件，勿回退到原生对话框。
-- **缓存与无 Redis**：单实例个人博客，站点设置 / 分类标签 / 站点统计 / 文章列表走 `unstable_cache` + tag 失效；文章详情、关于我、友链是 `revalidate = 60` 的静态页，文章增删改时用 `revalidatePath` 立即失效；首页与文章列表因视图偏好 Cookie / `searchParams` 保持动态；限流仍在进程内完成，无需 Redis。
+- **缓存与无 Redis**：单实例个人博客，站点设置 / 分类标签 / 站点统计 / 文章列表 / 友链 / 音乐列表都走 `unstable_cache` + tag 失效；文章详情、关于我、友链是 `revalidate = 60` 的静态页，文章与友链的写操作分别用 `revalidatePath` 立即失效；首页与文章列表因视图偏好 Cookie / `searchParams` 保持动态；限流仍在进程内完成，无需 Redis。
 
 ## 性能约定
 
@@ -179,6 +179,7 @@ npm test          # 组件单元测试（Vitest + Testing Library）
 - **Cookie 常量必须放在服务端安全的模块**：从 `'use client'` 模块导入任何非组件导出，在 Server Component 中会变成 client reference 代理对象（`typeof 'object'`），`VIEW_COOKIE` / `PLAYER_POSITION_COOKIE` 因此放在 `src/lib/utils.ts`。
 - **首屏偏好**：列表 / 九宫格视图仍用 Cookie + SSR 直出，避免先渲染默认值再跳变；播放器拖拽位置改由客户端读取 Cookie 恢复（服务端布局不再读 cookies，否则整条路由会退化为动态渲染）。
 - **静态页面写后失效**：`/posts/[slug]`、`/about`、`/links` 为 `revalidate = 60` 的静态页，内容写操作必须调用 `revalidatePath`，否则最长滞后 60s 才更新。
+- **缓存失效参数统一用 `{ expire: 0 }`**：后台写接口一律 `revalidateTag(tag, { expire: 0 })`，不要用 `'max'`。`'max'` 是 stale-while-revalidate，标签失效后仍会先返回旧数据，后台写完 `router.refresh()` 就会看到旧列表；`{ expire: 0 }` 让下一个请求阻塞式重校验、直接读到新数据。代价只落在写后的第一个请求，读取侧 60s TTL 与静态页 `revalidate` 均不受影响。
 - **图片**：首屏 LCP 图用 `fetchPriority="high"`，首屏以下封面一律 `loading="lazy" decoding="async"`。
 - **高频渲染**：播放器收起时不更新播放进度，阅读进度条直接写 `transform: scaleX()` 并用 `ResizeObserver` 代替逐帧测量。
 - **格式化实例**：`Intl.DateTimeFormat` 在 `src/lib/utils.ts` 模块级共享，不要在渲染函数里新建。
