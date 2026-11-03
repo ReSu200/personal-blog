@@ -258,10 +258,17 @@ export async function listPostsUncached(opts: ListOptions = {}) {
 }
 
 // 列表数据跨请求缓存 60s，文章增删改时用 CACHE_TAGS.posts 主动失效
-export const listPosts = unstable_cache(listPostsUncached, ['posts-list'], {
+const listPostsCached = unstable_cache(listPostsUncached, ['posts-list'], {
   revalidate: 60,
   tags: [CACHE_TAGS.posts],
 });
+
+// 过大的 page 直接查库、不进缓存，避免任意参数撑大缓存键空间
+const MAX_CACHED_PAGE = 50;
+
+export async function listPosts(opts: ListOptions = {}) {
+  return (opts.page ?? 1) > MAX_CACHED_PAGE ? listPostsUncached(opts) : listPostsCached(opts);
+}
 
 async function listPinnedPostsQuery(limit = 2): Promise<PostListItem[]> {
   const rows = await db
@@ -451,23 +458,38 @@ export const getSiteStats = cache(
 
 /* ============ 后台查询 ============ */
 
-export async function adminListPosts() {
-  return db
-    .select({
-      id: posts.id,
-      title: posts.title,
-      slug: posts.slug,
-      status: posts.status,
-      isPinned: posts.isPinned,
-      viewCount: posts.viewCount,
-      publishedAt: posts.publishedAt,
-      updatedAt: posts.updatedAt,
-      categoryName: categories.name,
-    })
-    .from(posts)
-    .leftJoin(categories, eq(posts.categoryId, categories.id))
-    .orderBy(desc(posts.isPinned), desc(posts.updatedAt));
-}
+export const adminListPosts = async (page = 1, pageSize = 20) => {
+  const currentPage = Math.max(1, page);
+  const [items, totalRows] = await Promise.all([
+    db
+      .select({
+        id: posts.id,
+        title: posts.title,
+        slug: posts.slug,
+        status: posts.status,
+        isPinned: posts.isPinned,
+        viewCount: posts.viewCount,
+        publishedAt: posts.publishedAt,
+        updatedAt: posts.updatedAt,
+        categoryName: categories.name,
+      })
+      .from(posts)
+      .leftJoin(categories, eq(posts.categoryId, categories.id))
+      .orderBy(desc(posts.isPinned), desc(posts.updatedAt))
+      .limit(pageSize)
+      .offset((currentPage - 1) * pageSize),
+    db.select({ value: count() }).from(posts),
+  ]);
+
+  const total = Number(totalRows[0]?.value ?? 0);
+  return {
+    items,
+    total,
+    page: currentPage,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
+};
 
 export async function adminGetPost(id: number) {
   const rows = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
@@ -481,23 +503,51 @@ export async function adminGetPost(id: number) {
   return { ...row, tagNames: tagRows.map((t) => t.name).join(', ') };
 }
 
-export async function adminListComments(status?: 'pending' | 'approved' | 'rejected') {
+export async function adminListComments(
+  status?: 'pending' | 'approved' | 'rejected',
+  page = 1,
+  pageSize = 20,
+) {
+  const currentPage = Math.max(1, page);
   const where = status ? eq(comments.status, status) : undefined;
-  return db
-    .select({
-      id: comments.id,
-      content: comments.content,
-      status: comments.status,
-      createdAt: comments.createdAt,
-      username: users.username,
-      postTitle: posts.title,
-      postSlug: posts.slug,
-    })
+  const [items, totalRows] = await Promise.all([
+    db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        status: comments.status,
+        createdAt: comments.createdAt,
+        username: users.username,
+        postTitle: posts.title,
+        postSlug: posts.slug,
+      })
+      .from(comments)
+      .innerJoin(users, eq(comments.userId, users.id))
+      .innerJoin(posts, eq(comments.postId, posts.id))
+      .where(where)
+      .orderBy(desc(comments.createdAt))
+      .limit(pageSize)
+      .offset((currentPage - 1) * pageSize),
+    db.select({ value: count() }).from(comments).where(where),
+  ]);
+
+  const total = Number(totalRows[0]?.value ?? 0);
+  return {
+    items,
+    total,
+    page: currentPage,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
+/** 待审核数量：只做一次聚合查询，避免把全部评论读进内存再统计 */
+export async function adminPendingCommentCount() {
+  const rows = await db
+    .select({ value: count() })
     .from(comments)
-    .innerJoin(users, eq(comments.userId, users.id))
-    .innerJoin(posts, eq(comments.postId, posts.id))
-    .where(where)
-    .orderBy(desc(comments.createdAt));
+    .where(eq(comments.status, 'pending'));
+  return Number(rows[0]?.value ?? 0);
 }
 
 export async function adminDashboard() {
@@ -538,10 +588,12 @@ export const listSongs = cache(
   ),
 );
 
-/** 后台友链列表：包含隐藏项 */
-export async function listFriendLinks() {
-  return db.select().from(friendLinks).orderBy(asc(friendLinks.sortOrder), asc(friendLinks.id));
-}
+/** 后台友链列表：包含隐藏项，后台改友链后由 links 标签失效 */
+export const listFriendLinks = unstable_cache(
+  async () => db.select().from(friendLinks).orderBy(asc(friendLinks.sortOrder), asc(friendLinks.id)),
+  ['admin-friend-links'],
+  { tags: [CACHE_TAGS.links], revalidate: 60 },
+);
 
 // 前台友链只展示可见项：请求内去重 + 跨请求缓存，后台改友链后失效
 export const listVisibleFriendLinks = cache(
@@ -563,10 +615,15 @@ export const listVisibleFriendLinks = cache(
   ),
 );
 
-export async function listAllCategories() {
-  return db.select().from(categories).orderBy(asc(categories.id));
-}
+// 分类/标签选项在后台多个页面复用，分类写操作已失效 taxonomy 标签
+export const listAllCategories = unstable_cache(
+  async () => db.select().from(categories).orderBy(asc(categories.id)),
+  ['all-categories'],
+  { tags: [CACHE_TAGS.taxonomy], revalidate: 60 },
+);
 
-export async function listAllTags() {
-  return db.select().from(tags).orderBy(asc(tags.id));
-}
+export const listAllTags = unstable_cache(
+  async () => db.select().from(tags).orderBy(asc(tags.id)),
+  ['all-tags'],
+  { tags: [CACHE_TAGS.taxonomy], revalidate: 60 },
+);

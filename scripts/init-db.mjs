@@ -73,6 +73,7 @@ const DDL = [
   `CREATE UNIQUE INDEX IF NOT EXISTS uk_posts_slug ON posts(slug)`,
   `CREATE INDEX IF NOT EXISTS idx_posts_status_published ON posts(status, published_at)`,
   `CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_posts_pinned_updated ON posts(is_pinned, updated_at)`,
 
   `CREATE TABLE IF NOT EXISTS post_tags (
     post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,

@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { Badge, Card, EmptyState } from '@/components/ui';
 import { CommentActions } from '@/components/comment-actions';
-import { adminListComments } from '@/lib/queries';
+import { Pagination } from '@/components/pagination';
+import { adminListComments, adminPendingCommentCount } from '@/lib/queries';
 import { formatDate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -18,15 +19,20 @@ const filters = [
 export default async function AdminCommentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; page?: string }>;
 }) {
   const params = await searchParams;
   const status = ['pending', 'approved', 'rejected'].includes(params.status ?? '')
     ? (params.status as 'pending' | 'approved' | 'rejected')
     : undefined;
+  const page = Math.max(1, Number(params.page) || 1);
 
-  const comments = await adminListComments(status);
-  const pendingCount = status === undefined ? comments.filter((c) => c.status === 'pending').length : 0;
+  // 待审核数是聚合查询结果，不再对整份列表做内存过滤
+  const [data, pendingCount] = await Promise.all([
+    adminListComments(status, page),
+    adminPendingCommentCount(),
+  ]);
+  const comments = data.items;
 
   return (
     <div className="space-y-5">
@@ -84,6 +90,13 @@ export default async function AdminCommentsPage({
         ))}
         {comments.length === 0 && <EmptyState text="没有符合条件的评论" />}
       </div>
+
+      <Pagination
+        page={data.page}
+        totalPages={data.totalPages}
+        basePath="/admin/comments"
+        query={{ status }}
+      />
     </div>
   );
 }

@@ -4,20 +4,28 @@ import { Badge, Card, EmptyState } from '@/components/ui';
 import { adminListPosts } from '@/lib/queries';
 import { formatDate } from '@/lib/utils';
 import { DeletePostButton } from '@/components/delete-post-button';
+import { Pagination } from '@/components/pagination';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = { title: '文章管理' };
 
-export default async function AdminPostsPage() {
-  const posts = await adminListPosts();
+export default async function AdminPostsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  const data = await adminListPosts(page);
+  const posts = data.items;
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold">文章管理</h1>
-          <p className="mt-1 text-sm text-muted-foreground">共 {posts.length} 篇文章</p>
+          <p className="mt-1 text-sm text-muted-foreground">共 {data.total} 篇文章</p>
         </div>
         <Link
           href="/admin/posts/new"
@@ -78,6 +86,8 @@ export default async function AdminPostsPage() {
           </div>
         )}
       </Card>
+
+      <Pagination page={data.page} totalPages={data.totalPages} basePath="/admin/posts" />
     </div>
   );
 }

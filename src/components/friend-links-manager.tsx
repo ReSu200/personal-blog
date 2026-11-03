@@ -152,30 +152,28 @@ export function FriendLinksManager({ links }: { links: FriendLink[] }) {
     }
   }
 
-  /** 交换相邻两项后按新顺序重排 sortOrder，避免排序值重复导致顺序不稳定 */
+  /** 只交换相邻两项的 sortOrder，避免按全表重排时发出整批请求 */
   async function move(link: FriendLink, direction: -1 | 1) {
     const index = sorted.findIndex((item) => item.id === link.id);
     const target = sorted[index + direction];
     if (!target) return;
 
-    const next = [...sorted];
-    [next[index], next[index + direction]] = [next[index + direction], next[index]];
-
     setError('');
     setMessage('');
     setBusy(true);
     try {
-      await Promise.all(
-        next.map((item, position) =>
-          item.sortOrder === position
-            ? Promise.resolve()
-            : fetch(`/api/admin/links/${item.id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sortOrder: position }),
-              }),
-        ),
-      );
+      await Promise.all([
+        fetch(`/api/admin/links/${link.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sortOrder: target.sortOrder }),
+        }),
+        fetch(`/api/admin/links/${target.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sortOrder: link.sortOrder }),
+        }),
+      ]);
       router.refresh();
     } catch {
       setError('网络异常，请稍后再试');
