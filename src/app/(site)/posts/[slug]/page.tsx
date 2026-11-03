@@ -2,25 +2,24 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { after } from 'next/server';
 import { ArrowLeft, ArrowRight, CalendarDays, Eye, Timer } from 'lucide-react';
 import { Markdown } from '@/components/markdown';
 import { AuthorCard } from '@/components/author-card';
 import { CommentSection } from '@/components/comment-section';
 import { ArticleProgress } from '@/components/article-progress';
 import { UserAvatar } from '@/components/user-avatar';
+import { ViewTracker } from '@/components/view-tracker';
 import {
   getAdjacentPosts,
   getApprovedComments,
   getPostBySlug,
   getSettings,
-  incrementView,
 } from '@/lib/queries';
 import { getSession } from '@/lib/auth';
 import { extractToc } from '@/lib/toc';
 import { formatDate, readingTime } from '@/lib/utils';
 
-export const dynamic = 'force-dynamic';
+// 页面仍依赖登录态与站点设置，动态渲染；阅读计数已移到客户端上报
 
 export async function generateMetadata({
   params,
@@ -49,9 +48,6 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
 
   const post = detail.post;
 
-  // 阅读计数只是副作用，放到响应结束后写库，不占用首屏渲染时间
-  after(() => incrementView(post.id));
-
   const [comments, session, adjacent, settings] = await Promise.all([
     getApprovedComments(post.id),
     sessionPromise,
@@ -66,6 +62,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
 
   return (
     <>
+      <ViewTracker postId={post.id} />
       <ArticleProgress />
 
       <div className="flex justify-center gap-10">

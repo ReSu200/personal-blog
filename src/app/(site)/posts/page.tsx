@@ -6,8 +6,6 @@ import { Pagination } from '@/components/pagination';
 import { SiteAside } from '@/components/site-aside';
 import { getCategoriesWithCount, getSettings, getTagsWithCount, listPosts, listPostsUncached } from '@/lib/queries';
 
-export const dynamic = 'force-dynamic';
-
 export const metadata = {
   title: '全部文章',
 };

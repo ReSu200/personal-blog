@@ -9,8 +9,6 @@ import { FeaturedPostCard } from '@/components/post-card';
 import { getSettings, listPinnedPosts, listPosts } from '@/lib/queries';
 import { VIEW_COOKIE } from '@/lib/utils';
 
-export const dynamic = 'force-dynamic';
-
 export default async function HomePage({
   searchParams,
 }: {

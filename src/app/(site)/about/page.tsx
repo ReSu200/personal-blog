@@ -5,8 +5,6 @@ import { HeroCover } from '@/components/hero-cover';
 import { UserAvatar } from '@/components/user-avatar';
 import { getCategoriesWithCount, getSettings, getSiteStats } from '@/lib/queries';
 
-export const dynamic = 'force-dynamic';
-
 export const metadata = { title: '关于我' };
 
 export default async function AboutPage() {

@@ -4,8 +4,6 @@ import { Github } from '@/components/icons';
 import { Card } from '@/components/ui';
 import { getSettings, listVisibleFriendLinks } from '@/lib/queries';
 
-export const dynamic = 'force-dynamic';
-
 export const metadata = { title: '友链' };
 
 export default async function LinksPage() {
