@@ -14,10 +14,9 @@ import type { SessionUser } from '@/lib/jwt';
 type Props = {
   siteName: string;
   logoUrl: string | null;
-  session: SessionUser | null;
-  displayName: string;
-  avatarUrl: string | null;
 };
+
+type HeaderUser = SessionUser & { displayName: string; avatarUrl: string | null };
 
 const navItems = [
   { href: '/', label: '首页' },
@@ -26,12 +25,29 @@ const navItems = [
   { href: '/links', label: '友链' },
 ];
 
-export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl }: Props) {
+export function SiteHeader({ siteName, logoUrl }: Props) {
   const pathname = usePathname();
+  const [user, setUser] = useState<HeaderUser | null>(null);
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // 登录态从接口获取，避免服务端读取 cookies 使整条路由变成动态渲染
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data: { user: HeaderUser | null }) => {
+        if (alive) setUser(data.user);
+      })
+      .catch(() => {
+        // 未登录或网络异常时保持游客态
+      });
+    return () => {
+      alive = false;
+    };
+  }, [pathname]);
 
   // 下滑后加强毛玻璃与描边，形成固定状态栏效果
   useEffect(() => {
@@ -130,7 +146,7 @@ export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl 
         <div className="flex items-center justify-end gap-1 justify-self-end">
           <ThemeToggle />
 
-          {session ? (
+          {user ? (
             <div className="relative hidden md:block" ref={menuRef}>
               <button
                 type="button"
@@ -140,11 +156,11 @@ export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl 
                 className="group flex items-center gap-2 rounded-full border border-transparent py-1 pl-1 pr-2 transition-colors hover:border-border hover:bg-accent/60"
               >
                 <UserAvatar
-                  avatar={avatarUrl}
-                  name={displayName}
+                  avatar={user.avatarUrl}
+                  name={user.displayName}
                   className="h-7 w-7 group-hover:animate-avatar-pop group-hover:ring-2 group-hover:ring-primary/40"
                 />
-                <span className="max-w-[7rem] truncate text-sm font-medium">{displayName}</span>
+                <span className="max-w-[7rem] truncate text-sm font-medium">{user.displayName}</span>
                 <ChevronDown
                   className={cn(
                     'h-3.5 w-3.5 text-muted-foreground transition-transform duration-200',
@@ -159,9 +175,9 @@ export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl 
                   className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-border/70 bg-card/95 p-1.5 shadow-xl backdrop-blur-sm animate-fade-in-up"
                 >
                   <div className="px-2 py-1.5">
-                    <p className="truncate text-sm font-medium">{displayName}</p>
+                    <p className="truncate text-sm font-medium">{user.displayName}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      @{session.username} · {session.role === 'admin' ? '管理员' : '注册用户'}
+                      @{user.username} · {user.role === 'admin' ? '管理员' : '注册用户'}
                     </p>
                   </div>
                   <div className="my-1 h-px bg-border" />
@@ -172,7 +188,7 @@ export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl 
                   >
                     <UserRound className="h-4 w-4" /> 个人中心
                   </Link>
-                  {session.role === 'admin' && (
+                  {user.role === 'admin' && (
                     <Link
                       href="/admin"
                       role="menuitem"
@@ -246,14 +262,14 @@ export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl 
 
             <div className="my-2 h-px bg-border" />
 
-            {session ? (
+            {user ? (
               <div className="space-y-1">
                 <div className="flex items-center gap-2 px-3 py-2">
-                  <UserAvatar avatar={avatarUrl} name={displayName} className="h-8 w-8" />
+                  <UserAvatar avatar={user.avatarUrl} name={user.displayName} className="h-8 w-8" />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{displayName}</p>
+                    <p className="truncate text-sm font-medium">{user.displayName}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      @{session.username} · {session.role === 'admin' ? '管理员' : '注册用户'}
+                      @{user.username} · {user.role === 'admin' ? '管理员' : '注册用户'}
                     </p>
                   </div>
                 </div>
@@ -263,7 +279,7 @@ export function SiteHeader({ siteName, logoUrl, session, displayName, avatarUrl 
                 >
                   <UserRound className="h-4 w-4" /> 个人中心
                 </Link>
-                {session.role === 'admin' && (
+                {user.role === 'admin' && (
                   <Link
                     href="/admin"
                     className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"

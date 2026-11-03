@@ -6,6 +6,9 @@ import { getSettings, listVisibleFriendLinks } from '@/lib/queries';
 
 export const metadata = { title: '友链' };
 
+// 内容变化频率低，交给路由缓存 60s
+export const revalidate = 60;
+
 export default async function LinksPage() {
   const [settings, friendLinks] = await Promise.all([getSettings(), listVisibleFriendLinks()]);
 

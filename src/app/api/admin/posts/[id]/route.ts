@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
@@ -88,6 +88,8 @@ export async function PUT(
   revalidateTag(CACHE_TAGS.stats, 'max');
   // 立即过期，保证编辑/删除后首次刷新即可见（'max' 会先返回旧数据）
   revalidateTag(CACHE_TAGS.posts, { expire: 0 });
+  revalidatePath(`/posts/${slug}`);
+  if (existing.slug !== slug) revalidatePath(`/posts/${existing.slug}`);
   return NextResponse.json({ ok: true, id, slug });
 }
 
@@ -104,12 +106,18 @@ export async function DELETE(
     return NextResponse.json({ error: '文章 ID 不合法' }, { status: 400 });
   }
 
-  // post_tags 与 comments 已声明级联删除，直接删文章即可
+  // 先取 slug 用于清理该文章的路由缓存，再依赖外键级联删除
+  const rows = await db.select({ slug: posts.slug }).from(posts).where(eq(posts.id, id)).limit(1);
+  if (!rows[0]) {
+    return NextResponse.json({ error: '文章不存在' }, { status: 404 });
+  }
+
   await db.delete(posts).where(eq(posts.id, id));
 
   revalidateTag(CACHE_TAGS.taxonomy, 'max');
   revalidateTag(CACHE_TAGS.stats, 'max');
   // 立即过期，保证编辑/删除后首次刷新即可见（'max' 会先返回旧数据）
   revalidateTag(CACHE_TAGS.posts, { expire: 0 });
+  revalidatePath(`/posts/${rows[0].slug}`);
   return NextResponse.json({ ok: true });
 }

@@ -14,12 +14,18 @@ import {
   getApprovedComments,
   getPostBySlug,
   getSettings,
+  listPublishedSlugs,
 } from '@/lib/queries';
-import { getSession } from '@/lib/auth';
 import { extractToc } from '@/lib/toc';
 import { formatDate, readingTime } from '@/lib/utils';
 
-// 页面仍依赖登录态与站点设置，动态渲染；阅读计数已移到客户端上报
+// 登录态改为客户端获取，页面本身可走 60s 路由缓存
+export const revalidate = 60;
+
+// 预渲染已有文章，新文章仍在首次访问时按需生成
+export async function generateStaticParams() {
+  return listPublishedSlugs();
+}
 
 export async function generateMetadata({
   params,
@@ -39,18 +45,16 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
 
-  // 站点设置与登录态和文章内容无关，先发起请求，避免在文章查询后再等一次
+  // 站点设置与文章内容无关，先发起请求，避免在文章查询后再等一次
   const settingsPromise = getSettings();
-  const sessionPromise = getSession();
 
   const detail = await getPostBySlug(decodedSlug);
   if (!detail || detail.post.status !== 'published') notFound();
 
   const post = detail.post;
 
-  const [comments, session, adjacent, settings] = await Promise.all([
+  const [comments, adjacent, settings] = await Promise.all([
     getApprovedComments(post.id),
-    sessionPromise,
     getAdjacentPosts({ id: post.id, publishedAt: post.publishedAt }),
     settingsPromise,
   ]);
@@ -219,7 +223,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
           </div>
 
           <div id="comments" className="mt-10 scroll-mt-24">
-            <CommentSection postId={post.id} comments={comments} session={session} />
+            <CommentSection postId={post.id} comments={comments} />
           </div>
         </article>
       </div>

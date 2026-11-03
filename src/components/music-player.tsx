@@ -28,8 +28,21 @@ type Props = {
   songs: Song[];
   autoplay: boolean;
   volume: number;
-  initialPosition: { left: number; top: number } | null;
+  initialPosition?: { left: number; top: number } | null;
 };
+
+// 服务端布局不再读取 cookies，播放器改为客户端读取上次拖拽位置
+function readSavedPosition() {
+  if (typeof document === 'undefined') return null;
+  const raw = document.cookie
+    .split('; ')
+    .find((item) => item.startsWith(`${PLAYER_POSITION_COOKIE}=`))
+    ?.slice(PLAYER_POSITION_COOKIE.length + 1);
+  if (!raw) return null;
+  const [left, top] = raw.split('-').map(Number);
+  if (!Number.isFinite(left) || !Number.isFinite(top)) return null;
+  return { left, top };
+}
 
 const EXPANDED_WIDTH = 288;
 const EXPANDED_HEIGHT = 340;
@@ -52,8 +65,10 @@ export function MusicPlayer({ songs, autoplay, volume: initialVolume, initialPos
   const lastPositionRef = useRef<{ left: number; top: number } | null>(null);
   const skipClickRef = useRef(false);
   const expandedRef = useRef(false);
-  // 位置来自服务端读取的 Cookie，首屏即为最终位置，不会先出现在默认角落再跳走
-  const [position, setPosition] = useState<{ left: number; top: number } | null>(initialPosition);
+  // 位置优先用传入值，否则读取 Cookie，避免先出现在默认角落再跳走
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(
+    () => initialPosition ?? readSavedPosition(),
+  );
   const [index, setIndex] = useState(() => {
     const defaultIndex = songs.findIndex((song) => song.isDefault === 1);
     return defaultIndex >= 0 ? defaultIndex : 0;

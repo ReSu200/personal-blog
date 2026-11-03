@@ -299,6 +299,15 @@ export const listPinnedPosts = unstable_cache(listPinnedPostsQuery, ['pinned-pos
   tags: [CACHE_TAGS.posts],
 });
 
+// 供 generateStaticParams 使用：只取已发布文章的 slug
+export async function listPublishedSlugs() {
+  const rows = await db
+    .select({ slug: posts.slug })
+    .from(posts)
+    .where(eq(posts.status, 'published'));
+  return rows.map((row) => ({ slug: row.slug }));
+}
+
 // generateMetadata 与页面渲染会各调用一次，cache 保证只查一次库
 export const getPostBySlug = cache(async (slug: string) => {
   const rows = await db

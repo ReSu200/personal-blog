@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { MessageSquare, Reply, Send } from 'lucide-react';
 import { Button, Card, Textarea } from '@/components/ui';
@@ -12,15 +12,31 @@ import type { SessionUser } from '@/lib/jwt';
 type Props = {
   postId: number;
   comments: CommentItem[];
-  session: SessionUser | null;
 };
 
-export function CommentSection({ postId, comments, session }: Props) {
+export function CommentSection({ postId, comments }: Props) {
+  // 登录态客户端获取，文章页因此不需要在服务端读取 cookies
+  const [session, setSession] = useState<SessionUser | null>(null);
   const [content, setContent] = useState('');
   const [replyTo, setReplyTo] = useState<{ id: number; username: string } | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data: { user: SessionUser | null }) => {
+        if (alive) setSession(data.user);
+      })
+      .catch(() => {
+        // 未登录或请求失败时保持游客态
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const tree = useMemo(() => {
     // 先按父评论分桶，避免对每条根评论都完整遍历一次列表

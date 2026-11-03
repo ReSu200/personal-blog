@@ -7,6 +7,9 @@ import { getCategoriesWithCount, getSettings, getSiteStats } from '@/lib/queries
 
 export const metadata = { title: '关于我' };
 
+// 内容变化频率低，交给路由缓存 60s
+export const revalidate = 60;
+
 export default async function AboutPage() {
   const [settings, stats, categories] = await Promise.all([
     getSettings(),

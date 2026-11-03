@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { db } from '@/db';
 import { posts } from '@/db/schema';
@@ -68,5 +68,6 @@ export async function POST(req: Request) {
   revalidateTag(CACHE_TAGS.stats, 'max');
   // 文章相关缓存用立即过期（而非 'max' 的先返回旧值），保证发布后首次刷新即可见
   revalidateTag(CACHE_TAGS.posts, { expire: 0 });
+  revalidatePath(`/posts/${slug}`);
   return NextResponse.json({ ok: true, id: postId, slug });
 }
