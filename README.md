@@ -76,6 +76,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 - 评论：仅登录用户可评论，支持两层回复，**需管理员审核后展示**
 - 注册 / 登录 / 登出：仅用户名 + 密码，注册需二次确认密码；登录需图形验证码（服务端 SVG 生成 + HMAC 签名 Cookie，5 分钟有效、一次性使用）
 - 个人中心（`/account`）：上传头像（PNG / JPG / WEBP，≤1MB）或选择 4 款内置头像、修改昵称、修改登录用户名、修改密码；管理员可额外维护 GitHub / QQ / 微信（管理员的昵称、头像与联系方式会作为博主信息展示在「关于我」与右侧作者卡）
+- 我的评论 / 通知：顶栏与个人中心可查看自己发过的全部评论（待审核 / 已通过 / 已拒绝 / 已被删除）及所在文章；管理员审核或删除后写站内通知，顶栏显示未读红点，进入通知页自动标记已读，可跳转到文章评论锚点
 - 登录失败限流：同一 IP 连续 5 次失败锁定 5 分钟
 - 深色 / 浅色主题切换（圆形扩散过渡动画）
 - RSS 订阅：`/rss.xml`
@@ -86,7 +87,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 - 仪表盘：文章 / 评论 / 待审核 / 音乐数量，最近更新文章
 - 文章管理：Markdown 编辑 + 实时预览、草稿 / 发布、置顶、分类、标签、定时发布时间、删除；封面直接上传（≤4MB，不设则回退站点默认封面）并可在预览区拖拽 / 方向键调整显示焦点，标签为带搜索的多选下拉（数据来自「分类与标签」）
 - 正文插图上传：编辑器工具条「插入图片」，上传后按当前光标位置插入 `![说明](/uploads/xxx.png)`，并自动补换行、光标落在插入内容末尾、只滚动编辑区定位到插入行
-- 评论管理：待审核 / 已通过 / 已拒绝筛选，通过、拒绝、删除
+- 评论管理：待审核 / 已通过 / 已拒绝筛选，通过、拒绝、删除（删除为软删除：前台与后台列表不再展示，作者仍可在「我的评论」看到记录）
 - 分类与标签：新增、删除（删除分类时文章自动置为未分类）
 - 音乐管理：上传 MP3/WAV/OGG/FLAC（≤50MB）、设置默认播放、排序、删除（同步删除本地文件）
 - 站点设置：单列四段式布局（基本信息 / 品牌与背景 / 帖子默认封面 / 音乐播放），含站点名称、个人描述、关于这个站点（留空显示默认文案）、页脚版权文案、网站 Logo 上传（≤2MB，可恢复默认）、首页背景板上传（≤4MB，可拖拽调整显示位置，可移除恢复默认背景）、推荐位默认封面与最新文章默认封面（各 ≤4MB，可拖拽预览调整显示位置）、音乐自动播放开关与默认音量；底部为吸底保存条
@@ -103,7 +104,8 @@ SQLite 类型约定：主键为 `INTEGER PRIMARY KEY AUTOINCREMENT`，时间戳�
 | `categories` | 分类 |
 | `tags` | 标签 |
 | `post_tags` | 文章-标签关联（联合主键） |
-| `comments` | 评论（parent_id 支持两层回复、status 审核状态） |
+| `comments` | 评论（parent_id 支持两层回复、status 审核状态、deleted_at 软删除时间） |
+| `comment_notifications` | 评论审核结果通知（user_id、comment_id、post_id、type、read_at） |
 | `songs` | 背景音乐（file_path、is_default、sort_order） |
 | `settings` | 站点设置（单行，含 logo_url、hero_background 首页背景板与 hero_position、featured_cover / latest_cover 两处默认封面及其显示位置、about_site 关于站点文案、footer_text 页脚版权文案、visit_count 访问量） |
 
@@ -113,6 +115,7 @@ SQLite 类型约定：主键为 `INTEGER PRIMARY KEY AUTOINCREMENT`，时间戳�
 - `posts.author_id → users.id`
 - `post_tags.post_id → posts.id`、`post_tags.tag_id → tags.id`（ON DELETE CASCADE）
 - `comments.post_id → posts.id`、`comments.user_id → users.id`（ON DELETE CASCADE）
+- `comment_notifications.comment_id → comments.id`、`comment_notifications.user_id → users.id`（ON DELETE CASCADE）
 
 ## 目录结构
 
@@ -146,7 +149,7 @@ npm run dev       # 开发模式（next dev --webpack）
 npm run build     # 生产构建（next build --webpack）
 npm run start     # 生产启动
 npm run db:init   # 建表 + 索引 + 初始化数据（幂等）
-npm run smoke     # 接口冒烟测试（需先启动 dev，共 23 项）
+npm run smoke     # 接口冒烟测试（需先启动 dev，共 28 项）
 npm test          # 组件单元测试（Vitest + Testing Library）
 ```
 
@@ -168,6 +171,7 @@ npm test          # 组件单元测试（Vitest + Testing Library）
 - **封面焦点**：位置以 `"x% y%"` 字符串存储，前端直接用 `object-position` 渲染；文章自带封面时用文章自己的 `cover_position`，无封面时才回退站点默认封面的位置。
 - **默认文案**：「关于这个站点」的默认内容定义在 `src/lib/utils.ts` 的 `DEFAULT_ABOUT_SITE`，数据库为空时前台用它兜底、后台输入框用它做占位提示（因此输入框默认是空的，无需手动清空）。
 - **删除确认**：破坏性操作统一走 `src/components/confirm-dialog.tsx` 的 `ConfirmDialog`（遮罩点击 / Esc / 自动聚焦确认按钮，错误文案显示在弹层内），不再使用 `window.confirm` / `window.alert`；IDE 等内嵌浏览器弹出原生对话框时会直接崩溃。新增删除入口请复用该组件，勿回退到原生对话框。
+- **评论状态通知**：评论删除改为软删除（`comments.deleted_at`），前台、后台列表、待审核数与统计均过滤该字段；管理员审核/删除时写 `comment_notifications`，作者在 `/account/notifications` 查看、`/account/comments` 回看全部记录；顶栏未读数只在路由变化时拉取，通知页标记已读后通过 `notifications:read` 事件清零。审核/删除还会 `revalidatePath('/posts/<slug>')`，文章详情页不必等 60s。
 - **缓存与无 Redis**：单实例个人博客，站点设置 / 分类标签 / 站点统计 / 文章列表 / 友链 / 音乐列表都走 `unstable_cache` + tag 失效；文章详情、关于我、友链是 `revalidate = 60` 的静态页，文章与友链的写操作分别用 `revalidatePath` 立即失效；首页与文章列表因视图偏好 Cookie / `searchParams` 保持动态；限流仍在进程内完成，无需 Redis。
 
 ## 性能约定
@@ -178,7 +182,7 @@ npm test          # 组件单元测试（Vitest + Testing Library）
 - **并行取数**：同一页面内互不依赖的查询走 `Promise.all`（如 `listPosts` 的列表与 `count()`）；阅读数不写进渲染路径，改由客户端 `POST /api/posts/[id]/view` 上报。
 - **Cookie 常量必须放在服务端安全的模块**：从 `'use client'` 模块导入任何非组件导出，在 Server Component 中会变成 client reference 代理对象（`typeof 'object'`），`VIEW_COOKIE` / `PLAYER_POSITION_COOKIE` 因此放在 `src/lib/utils.ts`。
 - **首屏偏好**：列表 / 九宫格视图仍用 Cookie + SSR 直出，避免先渲染默认值再跳变；播放器拖拽位置改由客户端读取 Cookie 恢复（服务端布局不再读 cookies，否则整条路由会退化为动态渲染）。
-- **静态页面写后失效**：`/posts/[slug]`、`/about`、`/links` 为 `revalidate = 60` 的静态页，内容写操作必须调用 `revalidatePath`，否则最长滞后 60s 才更新。
+- **静态页面写后失效**：`/posts/[slug]`、`/about`、`/links` 为 `revalidate = 60` 的静态页，内容写操作必须调用 `revalidatePath`，否则最长滞后 60s 才更新（文章增删改、评论审核/删除均已覆盖）。
 - **缓存失效参数统一用 `{ expire: 0 }`**：后台写接口一律 `revalidateTag(tag, { expire: 0 })`，不要用 `'max'`。`'max'` 是 stale-while-revalidate，标签失效后仍会先返回旧数据，后台写完 `router.refresh()` 就会看到旧列表；`{ expire: 0 }` 让下一个请求阻塞式重校验、直接读到新数据。代价只落在写后的第一个请求，读取侧 60s TTL 与静态页 `revalidate` 均不受影响。
 - **图片**：首屏 LCP 图用 `fetchPriority="high"`，首屏以下封面一律 `loading="lazy" decoding="async"`。
 - **高频渲染**：播放器收起时不更新播放进度，阅读进度条直接写 `transform: scaleX()` 并用 `ResizeObserver` 代替逐帧测量。

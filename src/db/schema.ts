@@ -98,9 +98,34 @@ export const comments = sqliteTable(
     status: text('status', { enum: ['pending', 'approved', 'rejected'] })
       .notNull()
       .default('pending'),
+    // 软删除时间：前台与后台列表都过滤掉非空记录，作者仍可在「我的评论」看到
+    deletedAt: integer('deleted_at', { mode: 'timestamp' }),
     createdAt: createdAt(),
   },
-  (t) => [index('idx_comments_post_status').on(t.postId, t.status)],
+  (t) => [
+    index('idx_comments_post_status').on(t.postId, t.status),
+    index('idx_comments_user_created').on(t.userId, t.createdAt),
+  ],
+);
+
+/** 评论审核结果通知：审核 / 删除时写入，用户读取后记录 read_at */
+export const commentNotifications = sqliteTable(
+  'comment_notifications',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    commentId: integer('comment_id').references(() => comments.id, { onDelete: 'cascade' }),
+    postId: integer('post_id').references(() => posts.id, { onDelete: 'cascade' }),
+    type: text('type', { enum: ['approved', 'rejected', 'deleted'] }).notNull(),
+    readAt: integer('read_at', { mode: 'timestamp' }),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index('idx_comment_notifications_user_read').on(t.userId, t.readAt),
+    index('idx_comment_notifications_user_created').on(t.userId, t.createdAt),
+  ],
 );
 
 export const songs = sqliteTable('songs', {
@@ -149,6 +174,7 @@ export const settings = sqliteTable('settings', {
 export type User = typeof users.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
+export type CommentNotification = typeof commentNotifications.$inferSelect;
 export type Song = typeof songs.$inferSelect;
 export type FriendLink = typeof friendLinks.$inferSelect;
 export type Settings = typeof settings.$inferSelect;

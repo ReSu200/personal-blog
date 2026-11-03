@@ -229,6 +229,11 @@ try {
   if (comment && !comment.content.includes('<script>')) pass('评论 HTML 标签已过滤');
   else fail('评论 HTML 标签已过滤', comment?.content);
 
+  // 14b. 待审核阶段不应产生通知
+  const unreadPending = await normal.request('/api/account/comment-notifications/unread-count');
+  if (unreadPending.status === 200 && unreadPending.json?.count === 0) pass('待审核阶段不产生未读通知');
+  else fail('待审核阶段不产生未读通知', `status=${unreadPending.status} count=${unreadPending.json?.count}`);
+
   // 15. 管理员审核通过
   const approve = await admin.request(`/api/admin/comments/${comment.id}`, {
     method: 'PATCH',
@@ -246,6 +251,70 @@ try {
     pass('详情页展示评论与昵称且无脚本注入');
   } else {
     fail('详情页展示评论与昵称且无脚本注入', `comment=${hasComment} nick=${hasNickname} script=${hasScript}`);
+  }
+
+  // 16b. 审核通过后用户收到 1 条未读通知
+  const unreadApproved = await normal.request('/api/account/comment-notifications/unread-count');
+  if (unreadApproved.status === 200 && unreadApproved.json?.count === 1) pass('审核通过后产生未读通知');
+  else fail('审核通过后产生未读通知', `status=${unreadApproved.status} count=${unreadApproved.json?.count}`);
+
+  // 16c. 标记已读后未读数清零
+  const markRead = await normal.request('/api/account/comment-notifications/read', {
+    method: 'POST',
+    body: { all: true },
+  });
+  const unreadAfterRead = await normal.request('/api/account/comment-notifications/unread-count');
+  if (markRead.status === 200 && unreadAfterRead.json?.count === 0) pass('通知标记已读后未读数清零');
+  else fail('通知标记已读后未读数清零', `read=${markRead.status} count=${unreadAfterRead.json?.count}`);
+
+  // 16d. 管理员拒绝：用户收到 rejected 通知，前台立即不再展示
+  const reject = await admin.request(`/api/admin/comments/${comment.id}`, {
+    method: 'PATCH',
+    body: { status: 'rejected' },
+  });
+  const unreadRejected = await normal.request('/api/account/comment-notifications/unread-count');
+  const [rejectedNotif] = await conn.query(
+    'SELECT type FROM comment_notifications WHERE comment_id = ? ORDER BY id DESC LIMIT 1',
+    [comment.id],
+  );
+  const detailAfterReject = await guest.request('/posts/build-blog-with-nextjs-14');
+  if (
+    reject.status === 200 &&
+    unreadRejected.json?.count === 1 &&
+    rejectedNotif[0]?.type === 'rejected' &&
+    !detailAfterReject.text.includes('冒烟测试评论')
+  ) {
+    pass('管理员拒绝后通知与前台隐藏生效');
+  } else {
+    fail(
+      '管理员拒绝后通知与前台隐藏生效',
+      `reject=${reject.status} count=${unreadRejected.json?.count} type=${rejectedNotif[0]?.type}`,
+    );
+  }
+
+  // 16e. 删除改为软删除：记录保留、作者可见、通知为 deleted、前台不再展示
+  const softDelete = await admin.request(`/api/admin/comments/${comment.id}`, { method: 'DELETE' });
+  const [deletedRow] = await conn.query('SELECT status, deleted_at FROM comments WHERE id = ?', [comment.id]);
+  const myCommentsPage = await normal.request('/account/comments');
+  const [deletedNotif] = await conn.query(
+    'SELECT type FROM comment_notifications WHERE comment_id = ? ORDER BY id DESC LIMIT 1',
+    [comment.id],
+  );
+  const detailAfterDelete = await guest.request('/posts/build-blog-with-nextjs-14');
+  if (
+    softDelete.status === 200 &&
+    deletedRow[0]?.deleted_at &&
+    myCommentsPage.status === 200 &&
+    myCommentsPage.text.includes('已被删除') &&
+    deletedNotif[0]?.type === 'deleted' &&
+    !detailAfterDelete.text.includes('冒烟测试评论')
+  ) {
+    pass('评论软删除后作者可见且前台隐藏');
+  } else {
+    fail(
+      '评论软删除后作者可见且前台隐藏',
+      `delete=${softDelete.status} deletedAt=${deletedRow[0]?.deleted_at} type=${deletedNotif[0]?.type}`,
+    );
   }
 
   // 17. 管理员创建文章

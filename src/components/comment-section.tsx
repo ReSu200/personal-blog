@@ -134,7 +134,11 @@ export function CommentSection({ postId, comments }: Props) {
 
       <div className="mt-6 space-y-5">
         {tree.map(({ root, replies }) => (
-          <div key={root.id} className="rounded-2xl border border-border/70 bg-background/60 p-4">
+          <div
+            key={root.id}
+            id={`comment-${root.id}`}
+            className="scroll-mt-24 rounded-2xl border border-border/70 bg-background/60 p-4"
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <UserAvatar
@@ -161,7 +165,7 @@ export function CommentSection({ postId, comments }: Props) {
             {replies.length > 0 && (
               <div className="mt-3 space-y-3 border-l-2 border-primary/20 pl-4">
                 {replies.map((reply) => (
-                  <div key={reply.id}>
+                  <div key={reply.id} id={`comment-${reply.id}`} className="scroll-mt-24">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium">
                         {reply.displayName ?? reply.username}

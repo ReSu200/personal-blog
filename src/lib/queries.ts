@@ -1,8 +1,19 @@
 import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
-import { and, asc, count, desc, eq, gt, inArray, like, lt, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, inArray, isNull, like, lt, or, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { categories, comments, friendLinks, posts, postTags, settings, songs, tags, users } from '@/db/schema';
+import {
+  categories,
+  commentNotifications,
+  comments,
+  friendLinks,
+  posts,
+  postTags,
+  settings,
+  songs,
+  tags,
+  users,
+} from '@/db/schema';
 import { DEFAULT_ABOUT_SITE } from '@/lib/utils';
 
 /** 跨请求缓存标签：后台写操作完成后调用 revalidateTag 失效对应缓存 */
@@ -390,7 +401,7 @@ export async function getApprovedComments(postId: number): Promise<CommentItem[]
     })
     .from(comments)
     .innerJoin(users, eq(comments.userId, users.id))
-    .where(and(eq(comments.postId, postId), eq(comments.status, 'approved')))
+    .where(and(eq(comments.postId, postId), eq(comments.status, 'approved'), isNull(comments.deletedAt)))
     .orderBy(asc(comments.createdAt));
   return rows;
 }
@@ -451,7 +462,10 @@ export const getSiteStats = cache(
     async () => {
       const [postRows, commentRows, songRows] = await Promise.all([
         db.select({ value: count() }).from(posts).where(eq(posts.status, 'published')),
-        db.select({ value: count() }).from(comments).where(eq(comments.status, 'approved')),
+        db
+          .select({ value: count() })
+          .from(comments)
+          .where(and(eq(comments.status, 'approved'), isNull(comments.deletedAt))),
         db.select({ value: count() }).from(songs),
       ]);
       return {
@@ -518,7 +532,10 @@ export async function adminListComments(
   pageSize = 20,
 ) {
   const currentPage = Math.max(1, page);
-  const where = status ? eq(comments.status, status) : undefined;
+  // 软删除的评论不再出现在后台列表与统计里
+  const where = status
+    ? and(eq(comments.status, status), isNull(comments.deletedAt))
+    : isNull(comments.deletedAt);
   const [items, totalRows] = await Promise.all([
     db
       .select({
@@ -555,7 +572,86 @@ export async function adminPendingCommentCount() {
   const rows = await db
     .select({ value: count() })
     .from(comments)
-    .where(eq(comments.status, 'pending'));
+    .where(and(eq(comments.status, 'pending'), isNull(comments.deletedAt)));
+  return Number(rows[0]?.value ?? 0);
+}
+
+/** 我的评论：含待审核 / 已拒绝 / 已被删除，按发表时间倒序 */
+export async function listMyComments(userId: number, page = 1, pageSize = 20) {
+  const currentPage = Math.max(1, page);
+  const where = eq(comments.userId, userId);
+  const [items, totalRows] = await Promise.all([
+    db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        status: comments.status,
+        deletedAt: comments.deletedAt,
+        createdAt: comments.createdAt,
+        postTitle: posts.title,
+        postSlug: posts.slug,
+      })
+      .from(comments)
+      .innerJoin(posts, eq(comments.postId, posts.id))
+      .where(where)
+      .orderBy(desc(comments.createdAt))
+      .limit(pageSize)
+      .offset((currentPage - 1) * pageSize),
+    db.select({ value: count() }).from(comments).where(where),
+  ]);
+
+  const total = Number(totalRows[0]?.value ?? 0);
+  return {
+    items,
+    total,
+    page: currentPage,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
+/** 我的通知：审核 / 删除结果，按时间倒序 */
+export async function listMyCommentNotifications(userId: number, page = 1, pageSize = 20) {
+  const currentPage = Math.max(1, page);
+  const where = eq(commentNotifications.userId, userId);
+  const [items, totalRows] = await Promise.all([
+    db
+      .select({
+        id: commentNotifications.id,
+        type: commentNotifications.type,
+        readAt: commentNotifications.readAt,
+        createdAt: commentNotifications.createdAt,
+        commentId: commentNotifications.commentId,
+        postTitle: posts.title,
+        postSlug: posts.slug,
+        commentContent: comments.content,
+      })
+      .from(commentNotifications)
+      .leftJoin(posts, eq(commentNotifications.postId, posts.id))
+      .leftJoin(comments, eq(commentNotifications.commentId, comments.id))
+      .where(where)
+      .orderBy(desc(commentNotifications.createdAt))
+      .limit(pageSize)
+      .offset((currentPage - 1) * pageSize),
+    db.select({ value: count() }).from(commentNotifications).where(where),
+  ]);
+
+  const total = Number(totalRows[0]?.value ?? 0);
+  return {
+    items,
+    total,
+    page: currentPage,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
+}
+
+/** 未读通知数：顶栏红点用，游客不调用 */
+export async function countUnreadCommentNotifications(userId: number) {
+  const rows = await db
+    .select({ value: count() })
+    .from(commentNotifications)
+    .where(and(eq(commentNotifications.userId, userId), isNull(commentNotifications.readAt)));
   return Number(rows[0]?.value ?? 0);
 }
 
@@ -563,8 +659,11 @@ export async function adminDashboard() {
   const [postRows, publishedRows, commentRows, pendingRows, songRows, recent] = await Promise.all([
     db.select({ value: count() }).from(posts),
     db.select({ value: count() }).from(posts).where(eq(posts.status, 'published')),
-    db.select({ value: count() }).from(comments),
-    db.select({ value: count() }).from(comments).where(eq(comments.status, 'pending')),
+    db.select({ value: count() }).from(comments).where(isNull(comments.deletedAt)),
+    db
+      .select({ value: count() })
+      .from(comments)
+      .where(and(eq(comments.status, 'pending'), isNull(comments.deletedAt))),
     db.select({ value: count() }).from(songs),
     db
       .select({

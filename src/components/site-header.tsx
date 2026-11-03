@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, LayoutDashboard, LogIn, LogOut, Menu, UserRound, X } from 'lucide-react';
+import { Bell, ChevronDown, LayoutDashboard, LogIn, LogOut, Menu, MessageSquare, UserRound, X } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { SiteLogo } from '@/components/site-logo';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -31,6 +31,7 @@ export function SiteHeader({ siteName, logoUrl }: Props) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // 登录态从接口获取，避免服务端读取 cookies 使整条路由变成动态渲染
@@ -48,6 +49,33 @@ export function SiteHeader({ siteName, logoUrl }: Props) {
       alive = false;
     };
   }, [pathname]);
+
+  // 未读通知数：仅在已登录且路由变化时拉取，不轮询
+  useEffect(() => {
+    if (!user) {
+      setUnreadNotifications(0);
+      return;
+    }
+    let alive = true;
+    fetch('/api/account/comment-notifications/unread-count', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data: { count?: number }) => {
+        if (alive) setUnreadNotifications(Number(data.count ?? 0));
+      })
+      .catch(() => {
+        // 拉取失败时保留上次结果
+      });
+    return () => {
+      alive = false;
+    };
+  }, [user, pathname]);
+
+  // 通知页标记已读后广播事件，顶栏红点立即清零
+  useEffect(() => {
+    const onRead = () => setUnreadNotifications(0);
+    window.addEventListener('notifications:read', onRead);
+    return () => window.removeEventListener('notifications:read', onRead);
+  }, []);
 
   // 下滑后加强毛玻璃与描边，形成固定状态栏效果
   useEffect(() => {
@@ -188,6 +216,25 @@ export function SiteHeader({ siteName, logoUrl }: Props) {
                   >
                     <UserRound className="h-4 w-4" /> 个人中心
                   </Link>
+                  <Link
+                    href="/account/comments"
+                    role="menuitem"
+                    className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <MessageSquare className="h-4 w-4" /> 我的评论
+                  </Link>
+                  <Link
+                    href="/account/notifications"
+                    role="menuitem"
+                    className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Bell className="h-4 w-4" /> 通知
+                    {unreadNotifications > 0 && (
+                      <span className="ml-auto min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-medium text-white">
+                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                      </span>
+                    )}
+                  </Link>
                   {user.role === 'admin' && (
                     <Link
                       href="/admin"
@@ -278,6 +325,23 @@ export function SiteHeader({ siteName, logoUrl }: Props) {
                   className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                 >
                   <UserRound className="h-4 w-4" /> 个人中心
+                </Link>
+                <Link
+                  href="/account/comments"
+                  className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <MessageSquare className="h-4 w-4" /> 我的评论
+                </Link>
+                <Link
+                  href="/account/notifications"
+                  className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Bell className="h-4 w-4" /> 通知
+                  {unreadNotifications > 0 && (
+                    <span className="ml-auto min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-medium text-white">
+                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                    </span>
+                  )}
                 </Link>
                 {user.role === 'admin' && (
                   <Link

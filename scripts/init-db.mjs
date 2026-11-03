@@ -91,6 +91,19 @@ const DDL = [
     created_at INTEGER NOT NULL DEFAULT (unixepoch())
   )`,
   `CREATE INDEX IF NOT EXISTS idx_comments_post_status ON comments(post_id, status)`,
+  `CREATE INDEX IF NOT EXISTS idx_comments_user_created ON comments(user_id, created_at)`,
+
+  `CREATE TABLE IF NOT EXISTS comment_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+    post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    type TEXT NOT NULL CHECK (type IN ('approved','rejected','deleted')),
+    read_at INTEGER,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch())
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_comment_notifications_user_read ON comment_notifications(user_id, read_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_comment_notifications_user_created ON comment_notifications(user_id, created_at)`,
 
   `CREATE TABLE IF NOT EXISTS songs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -343,6 +356,13 @@ function main() {
   console.log('→ 创建数据表...');
   for (const sql of DDL) {
     db.exec(sql);
+  }
+
+  // SQLite 不支持 ADD COLUMN IF NOT EXISTS，先查列再补软删除字段（旧库升级用）
+  const commentColumns = db.prepare('PRAGMA table_info(comments)').all();
+  if (!commentColumns.some((column) => column.name === 'deleted_at')) {
+    db.exec('ALTER TABLE comments ADD COLUMN deleted_at INTEGER');
+    console.log('→ comments 已补充 deleted_at 字段');
   }
 
   console.log('→ 写入初始账号...');
