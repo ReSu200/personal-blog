@@ -23,6 +23,7 @@ next-env.d.ts
 .screenshots
 dogfood-output/
 scripts/_tmp-*.mjs
+doc/
 
 # 用户上传的内容（不进仓库，仅保留本地运行）
 public/uploads/
