@@ -3,7 +3,7 @@ import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { categories, posts, postTags, tags } from '@/db/schema';
+import { categories, postTags, tags } from '@/db/schema';
 import { guardAdmin } from '@/lib/guard';
 import { slugify } from '@/lib/utils';
 import { CACHE_TAGS } from '@/lib/queries';
@@ -52,7 +52,7 @@ export async function DELETE(req: Request) {
   }
 
   if (type === 'category') {
-    await db.update(posts).set({ categoryId: null }).where(eq(posts.categoryId, id));
+    // posts.category_id 已声明 ON DELETE SET NULL，删分类即可自动置空
     await db.delete(categories).where(eq(categories.id, id));
   } else {
     await db.delete(postTags).where(eq(postTags.tagId, id));

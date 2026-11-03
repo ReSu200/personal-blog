@@ -3,7 +3,7 @@ import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { comments, posts, postTags } from '@/db/schema';
+import { posts } from '@/db/schema';
 import { guardAdmin } from '@/lib/guard';
 import { CACHE_TAGS } from '@/lib/queries';
 import { parseTagInput, syncPostTags, uniquePostSlug } from '@/lib/post-service';
@@ -104,8 +104,7 @@ export async function DELETE(
     return NextResponse.json({ error: '文章 ID 不合法' }, { status: 400 });
   }
 
-  await db.delete(postTags).where(eq(postTags.postId, id));
-  await db.delete(comments).where(eq(comments.postId, id));
+  // post_tags 与 comments 已声明级联删除，直接删文章即可
   await db.delete(posts).where(eq(posts.id, id));
 
   revalidateTag(CACHE_TAGS.taxonomy, 'max');

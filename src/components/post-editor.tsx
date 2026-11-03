@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -87,6 +87,12 @@ export function PostEditor({
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // 标签搜索只在关键词变化时重算，避免每次输入正文都全量过滤
+  const filteredTags = useMemo(() => {
+    const keyword = tagQuery.trim().toLowerCase();
+    return keyword ? allTags.filter((tag) => tag.name.toLowerCase().includes(keyword)) : allTags;
+  }, [allTags, tagQuery]);
 
   useEffect(() => {
     if (!tagOpen) return;
@@ -475,26 +481,22 @@ export function PostEditor({
                           还没有标签，可先在「分类与标签」中创建
                         </p>
                       )}
-                      {allTags
-                        .filter((tag) =>
-                          tag.name.toLowerCase().includes(tagQuery.trim().toLowerCase()),
-                        )
-                        .map((tag) => {
-                          const active = tags.includes(tag.name);
-                          return (
-                            <button
-                              key={tag.id}
-                              type="button"
-                              onClick={() => toggleTag(tag.name)}
-                              className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
-                                active ? 'bg-primary/10 text-primary' : 'hover:bg-accent'
-                              }`}
-                            >
-                              <span>#{tag.name}</span>
-                              {active && <Check className="h-3.5 w-3.5" />}
-                            </button>
-                          );
-                        })}
+                      {filteredTags.map((tag) => {
+                        const active = tags.includes(tag.name);
+                        return (
+                          <button
+                            key={tag.id}
+                            type="button"
+                            onClick={() => toggleTag(tag.name)}
+                            className={`flex w-full items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs transition-colors ${
+                              active ? 'bg-primary/10 text-primary' : 'hover:bg-accent'
+                            }`}
+                          >
+                            <span>#{tag.name}</span>
+                            {active && <Check className="h-3.5 w-3.5" />}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
