@@ -22,6 +22,7 @@ function Manager({
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [confirmId, setConfirmId] = useState<number | null>(null);
 
   async function add() {
     if (!name.trim()) return;
@@ -48,16 +49,19 @@ function Manager({
   }
 
   async function remove(id: number) {
-    if (!window.confirm('确定删除吗？关联的文章数据会受影响。')) return;
+    setError('');
     setLoading(true);
     try {
       const res = await fetch(`/api/admin/taxonomy?type=${type}&id=${id}`, { method: 'DELETE' });
       if (!res.ok) {
-        const data = await res.json();
-        window.alert(data.error ?? '删除失败');
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? '删除失败');
         return;
       }
+      setConfirmId(null);
       router.refresh();
+    } catch {
+      setError('网络异常，请稍后再试');
     } finally {
       setLoading(false);
     }
@@ -86,14 +90,32 @@ function Manager({
 
       <div className="mt-4 divide-y divide-border">
         {items.map((item) => (
-          <div key={item.id} className="flex items-center justify-between py-2 text-sm">
+          <div key={item.id} className="flex items-center justify-between gap-3 py-2 text-sm">
             <span>
               {item.name}
               <span className="ml-2 text-xs text-muted-foreground">/{item.slug}</span>
             </span>
-            <Button variant="ghost" size="icon" onClick={() => remove(item.id)} title="删除">
-              <Trash2 className="h-4 w-4 text-red-500" />
-            </Button>
+            {confirmId === item.id ? (
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className="text-xs text-red-600 dark:text-red-400">确认删除？</span>
+                <Button variant="ghost" size="sm" onClick={() => remove(item.id)} disabled={loading}>
+                  删除
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setConfirmId(null)} disabled={loading}>
+                  取消
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setConfirmId(item.id)}
+                title="删除"
+                aria-label={`删除 ${item.name}`}
+              >
+                <Trash2 className="h-4 w-4 text-red-500" />
+              </Button>
+            )}
           </div>
         ))}
         {items.length === 0 && <p className="py-3 text-xs text-muted-foreground">暂无数据</p>}

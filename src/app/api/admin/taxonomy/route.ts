@@ -35,7 +35,9 @@ export async function POST(req: Request) {
   const slug = slugExisting[0] ? `${baseSlug}-${Date.now().toString().slice(-4)}` : baseSlug;
 
   await db.insert(table).values({ name, slug });
-  revalidateTag(CACHE_TAGS.taxonomy, 'max');
+  // 立即过期，保证新增后刷新即可见（'max' 会先返回旧列表）
+  revalidateTag(CACHE_TAGS.taxonomy, { expire: 0 });
+  revalidateTag(CACHE_TAGS.stats, 'max');
   return NextResponse.json({ ok: true });
 }
 
@@ -59,7 +61,7 @@ export async function DELETE(req: Request) {
     await db.delete(tags).where(eq(tags.id, id));
   }
 
-  revalidateTag(CACHE_TAGS.taxonomy, 'max');
+  revalidateTag(CACHE_TAGS.taxonomy, { expire: 0 });
   revalidateTag(CACHE_TAGS.stats, 'max');
   // 分类/标签变更会影响列表上的分类名与标签，需要一起失效（立即过期，与 'max' 语义不同）
   revalidateTag(CACHE_TAGS.posts, { expire: 0 });
