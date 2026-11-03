@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { and, eq, ne } from 'drizzle-orm';
 import { db } from '@/db';
@@ -81,7 +81,9 @@ export async function PATCH(
     })
     .where(eq(friendLinks.id, id));
 
-  revalidateTag(CACHE_TAGS.links, 'max');
+  // 立即过期，保证编辑 / 排序 / 显隐后刷新即可见（profile 'max' 会先返回旧数据）
+  revalidateTag(CACHE_TAGS.links, { expire: 0 });
+  revalidatePath('/links');
   return NextResponse.json({ ok: true });
 }
 
@@ -104,6 +106,7 @@ export async function DELETE(
   }
 
   await db.delete(friendLinks).where(eq(friendLinks.id, id));
-  revalidateTag(CACHE_TAGS.links, 'max');
+  revalidateTag(CACHE_TAGS.links, { expire: 0 });
+  revalidatePath('/links');
   return NextResponse.json({ ok: true });
 }

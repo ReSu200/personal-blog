@@ -78,7 +78,8 @@ export async function POST(req: Request) {
   await saveLogo(logoUrl);
   await removeUploadedFile(previous);
 
-  revalidateTag(CACHE_TAGS.settings, 'max');
+  // 立即过期，保证上传 Logo 后刷新即可见（'max' 会先返回旧数据）
+  revalidateTag(CACHE_TAGS.settings, { expire: 0 });
   return NextResponse.json({ ok: true, logoUrl });
 }
 
@@ -90,6 +91,7 @@ export async function DELETE() {
   await saveLogo(null);
   await removeUploadedFile(previous);
 
-  revalidateTag(CACHE_TAGS.settings, 'max');
+  // 立即过期，保证恢复默认 Logo 后刷新即可见（'max' 会先返回旧数据）
+  revalidateTag(CACHE_TAGS.settings, { expire: 0 });
   return NextResponse.json({ ok: true, logoUrl: null });
 }

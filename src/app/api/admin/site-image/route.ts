@@ -115,7 +115,8 @@ export async function POST(req: Request) {
   await persist({ [KINDS[kind].column]: url }, row);
   await removeUploadedFile(previous);
 
-  revalidateTag(CACHE_TAGS.settings, 'max');
+  // 立即过期，保证替换图片后刷新即可见（'max' 会先返回旧数据）
+  revalidateTag(CACHE_TAGS.settings, { expire: 0 });
   return NextResponse.json({ ok: true, url });
 }
 
@@ -139,7 +140,7 @@ export async function PUT(req: Request) {
   const position = `${x}% ${y}%`;
   await persist({ [KINDS[kind].positionColumn]: position });
 
-  revalidateTag(CACHE_TAGS.settings, 'max');
+  revalidateTag(CACHE_TAGS.settings, { expire: 0 });
   return NextResponse.json({ ok: true, position });
 }
 
@@ -161,6 +162,7 @@ export async function DELETE(req: Request) {
   await persist(patch, row);
   await removeUploadedFile(previous);
 
-  revalidateTag(CACHE_TAGS.settings, 'max');
+  // 立即过期，保证移除图片后刷新即可见（'max' 会先返回旧数据）
+  revalidateTag(CACHE_TAGS.settings, { expire: 0 });
   return NextResponse.json({ ok: true, url: null });
 }

@@ -63,10 +63,9 @@ export async function POST(req: Request) {
   const postId = inserted[0].id;
   await syncPostTags(postId, parseTagInput(data.tags));
 
-  // 文章会影响分类/标签聚合、站点统计与前台列表缓存
-  revalidateTag(CACHE_TAGS.taxonomy, 'max');
-  revalidateTag(CACHE_TAGS.stats, 'max');
-  // 文章相关缓存用立即过期（而非 'max' 的先返回旧值），保证发布后首次刷新即可见
+  // 文章会影响分类/标签聚合、站点统计与前台列表缓存，统一立即过期，保证发布后首次刷新即可见
+  revalidateTag(CACHE_TAGS.taxonomy, { expire: 0 });
+  revalidateTag(CACHE_TAGS.stats, { expire: 0 });
   revalidateTag(CACHE_TAGS.posts, { expire: 0 });
   revalidatePath(`/posts/${slug}`);
   return NextResponse.json({ ok: true, id: postId, slug });

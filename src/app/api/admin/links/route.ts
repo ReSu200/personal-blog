@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { eq, max } from 'drizzle-orm';
 import { db } from '@/db';
@@ -66,6 +66,8 @@ export async function POST(req: Request) {
     })
     .returning({ id: friendLinks.id });
 
-  revalidateTag(CACHE_TAGS.links, 'max');
+  // 立即过期，保证新增后刷新即可见（profile 'max' 会先返回旧数据）
+  revalidateTag(CACHE_TAGS.links, { expire: 0 });
+  revalidatePath('/links');
   return NextResponse.json({ ok: true, id: inserted[0].id });
 }

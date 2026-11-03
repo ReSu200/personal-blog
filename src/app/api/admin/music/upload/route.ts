@@ -78,7 +78,8 @@ export async function POST(req: Request) {
     })
     .returning({ id: songs.id });
 
-  revalidateTag(CACHE_TAGS.music, 'max');
-  revalidateTag(CACHE_TAGS.stats, 'max');
+  // 立即过期，保证上传后刷新即可见（profile 'max' 会先返回旧数据）
+  revalidateTag(CACHE_TAGS.music, { expire: 0 });
+  revalidateTag(CACHE_TAGS.stats, { expire: 0 });
   return NextResponse.json({ ok: true, id: inserted[0].id, filePath: `/music/${fileName}` });
 }

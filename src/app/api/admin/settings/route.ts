@@ -44,6 +44,7 @@ export async function PUT(req: Request) {
     await db.insert(settings).values(values);
   }
 
-  revalidateTag(CACHE_TAGS.settings, 'max');
+  // 立即过期，保证保存后刷新即可见新值（'max' 会先返回旧值）
+  revalidateTag(CACHE_TAGS.settings, { expire: 0 });
   return NextResponse.json({ ok: true });
 }

@@ -84,8 +84,8 @@ export async function PUT(
 
   await syncPostTags(id, parseTagInput(data.tags));
 
-  revalidateTag(CACHE_TAGS.taxonomy, 'max');
-  revalidateTag(CACHE_TAGS.stats, 'max');
+  revalidateTag(CACHE_TAGS.taxonomy, { expire: 0 });
+  revalidateTag(CACHE_TAGS.stats, { expire: 0 });
   // 立即过期，保证编辑/删除后首次刷新即可见（'max' 会先返回旧数据）
   revalidateTag(CACHE_TAGS.posts, { expire: 0 });
   revalidatePath(`/posts/${slug}`);
@@ -114,8 +114,8 @@ export async function DELETE(
 
   await db.delete(posts).where(eq(posts.id, id));
 
-  revalidateTag(CACHE_TAGS.taxonomy, 'max');
-  revalidateTag(CACHE_TAGS.stats, 'max');
+  revalidateTag(CACHE_TAGS.taxonomy, { expire: 0 });
+  revalidateTag(CACHE_TAGS.stats, { expire: 0 });
   // 立即过期，保证编辑/删除后首次刷新即可见（'max' 会先返回旧数据）
   revalidateTag(CACHE_TAGS.posts, { expire: 0 });
   revalidatePath(`/posts/${rows[0].slug}`);

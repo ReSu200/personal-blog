@@ -59,7 +59,8 @@ export async function PATCH(
     })
     .where(eq(songs.id, id));
 
-  revalidateTag(CACHE_TAGS.music, 'max');
+  // 立即过期，保证编辑 / 排序 / 设默认后刷新即可见（profile 'max' 会先返回旧数据）
+  revalidateTag(CACHE_TAGS.music, { expire: 0 });
   return NextResponse.json({ ok: true });
 }
 
@@ -92,7 +93,8 @@ export async function DELETE(
   }
 
   await db.delete(songs).where(eq(songs.id, id));
-  revalidateTag(CACHE_TAGS.music, 'max');
-  revalidateTag(CACHE_TAGS.stats, 'max');
+  // 立即过期，保证删除后刷新即可见（profile 'max' 会先返回旧数据）
+  revalidateTag(CACHE_TAGS.music, { expire: 0 });
+  revalidateTag(CACHE_TAGS.stats, { expire: 0 });
   return NextResponse.json({ ok: true });
 }
