@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { Badge, Button, Card, Input, Label, Textarea } from '@/components/ui';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 
 type FriendLink = {
   id: number;
@@ -54,6 +55,8 @@ export function FriendLinksManager({ links }: { links: FriendLink[] }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<FriendLink | null>(null);
+  const [deleteError, setDeleteError] = useState('');
 
   const sorted = [...links].sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id);
 
@@ -183,22 +186,23 @@ export function FriendLinksManager({ links }: { links: FriendLink[] }) {
   }
 
   async function remove(link: FriendLink) {
-    if (!window.confirm(`确定删除友链「${link.name}」吗？`)) return;
+    setDeleteError('');
     setError('');
     setMessage('');
     setBusy(true);
     try {
       const res = await fetch(`/api/admin/links/${link.id}`, { method: 'DELETE' });
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? '删除失败');
+        const data = await res.json().catch(() => null);
+        setDeleteError(data?.error ?? '删除失败');
         return;
       }
       if (editingId === link.id) setEditingId(null);
+      setPendingDelete(null);
       setMessage('友链已删除');
       router.refresh();
     } catch {
-      setError('网络异常，请稍后再试');
+      setDeleteError('网络异常，请稍后再试');
     } finally {
       setBusy(false);
     }
@@ -339,7 +343,14 @@ export function FriendLinksManager({ links }: { links: FriendLink[] }) {
                     <Button variant="ghost" size="icon" disabled={busy} onClick={() => startEdit(link)} title="编辑">
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" disabled={busy} onClick={() => remove(link)} title="删除">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={busy}
+                      onClick={() => setPendingDelete(link)}
+                      title="删除"
+                      aria-label={`删除友链 ${link.name}`}
+                    >
                       <Trash2 className="h-4 w-4 text-red-500" />
                     </Button>
                   </div>
@@ -411,6 +422,21 @@ export function FriendLinksManager({ links }: { links: FriendLink[] }) {
           </div>
         </Card>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`确定删除友链「${pendingDelete?.name ?? ''}」吗？`}
+        error={deleteError}
+        loading={busy}
+        onConfirm={() => {
+          if (pendingDelete) remove(pendingDelete);
+        }}
+        onCancel={() => {
+          if (busy) return;
+          setPendingDelete(null);
+          setDeleteError('');
+        }}
+      />
     </div>
   );
 }

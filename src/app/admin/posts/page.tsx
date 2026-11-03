@@ -79,7 +79,7 @@ export default async function AdminPostsPage({
                       <PencilLine className="h-4 w-4" />
                     </span>
                   </Link>
-                  <DeletePostButton id={post.id} />
+                  <DeletePostButton id={post.id} title={post.title} />
                 </div>
               </div>
             ))}

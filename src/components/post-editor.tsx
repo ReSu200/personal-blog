@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Check, ChevronDown, Eye, ImagePlus, Loader2, Save, Search, Send, Trash2, X } from 'lucide-react';
 import { Button, Card, Input, Label, Textarea } from '@/components/ui';
 import { CoverPositionPreview } from '@/components/cover-position-preview';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 
 // 预览依赖 react-markdown 与代码高亮，懒加载后不进编辑器首屏包
 const Markdown = dynamic(() => import('@/components/markdown').then((mod) => mod.Markdown), {
@@ -87,6 +88,8 @@ export function PostEditor({
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // 标签搜索只在关键词变化时重算，避免每次输入正文都全量过滤
   const filteredTags = useMemo(() => {
@@ -256,17 +259,20 @@ export function PostEditor({
 
   async function remove() {
     if (!isEdit) return;
-    if (!window.confirm('确定要删除这篇文章吗？该操作不可恢复。')) return;
+    setDeleteError('');
     setLoading(true);
     try {
       const res = await fetch(`/api/admin/posts/${post!.id}`, { method: 'DELETE' });
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? '删除失败');
+        const data = await res.json().catch(() => null);
+        setDeleteError(data?.error ?? '删除失败');
         return;
       }
+      setDeleteOpen(false);
       router.push('/admin/posts');
       router.refresh();
+    } catch {
+      setDeleteError('网络异常，请稍后再试');
     } finally {
       setLoading(false);
     }
@@ -286,7 +292,7 @@ export function PostEditor({
             </Button>
           </Link>
           {isEdit && (
-            <Button variant="danger" size="sm" onClick={remove} disabled={loading}>
+            <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)} disabled={loading}>
               <Trash2 className="h-3.5 w-3.5" /> 删除
             </Button>
           )}
@@ -303,6 +309,20 @@ export function PostEditor({
       {error && (
         <div className="rounded-lg bg-red-500/10 px-4 py-2.5 text-sm text-red-600 dark:text-red-400">{error}</div>
       )}
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title={`确定删除《${title.trim() || '这篇文章'}》吗？`}
+        description="删除后文章、评论与标签关联会一并移除，且不可恢复。"
+        error={deleteError}
+        loading={loading}
+        onConfirm={remove}
+        onCancel={() => {
+          if (loading) return;
+          setDeleteOpen(false);
+          setDeleteError('');
+        }}
+      />
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-4">

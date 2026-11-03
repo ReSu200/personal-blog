@@ -15,6 +15,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { Badge, Button, Card, Input, Label } from '@/components/ui';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { formatDuration } from '@/lib/utils';
 
 type Song = {
@@ -64,6 +65,8 @@ export function MusicManager({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<Song | null>(null);
+  const [deleteError, setDeleteError] = useState('');
 
   const [autoplay, setAutoplay] = useState(initialAutoplay);
   const [volume, setVolume] = useState(initialVolume);
@@ -171,17 +174,20 @@ export function MusicManager({
     }
   }
 
-  async function remove(id: number) {
-    if (!window.confirm('确定删除这首歌曲吗？本地音频文件也会被删除。')) return;
+  async function remove(song: Song) {
+    setDeleteError('');
     setLoading(true);
     try {
-      const res = await fetch(`/api/admin/music/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/music/${song.id}`, { method: 'DELETE' });
       if (!res.ok) {
-        const data = await res.json();
-        window.alert(data.error ?? '删除失败');
+        const data = await res.json().catch(() => null);
+        setDeleteError(data?.error ?? '删除失败');
         return;
       }
+      setPendingDelete(null);
       router.refresh();
+    } catch {
+      setDeleteError('网络异常，请稍后再试');
     } finally {
       setLoading(false);
     }
@@ -248,7 +254,14 @@ export function MusicManager({
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" /> 设为默认
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => remove(song.id)} disabled={loading} title="删除">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setPendingDelete(song)}
+                  disabled={loading}
+                  title="删除"
+                  aria-label={`删除歌曲 ${song.title}`}
+                >
                   <Trash2 className="h-4 w-4 text-red-500" />
                 </Button>
               </div>
@@ -354,6 +367,22 @@ export function MusicManager({
           </div>
         </Card>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`确定删除《${pendingDelete?.title ?? ''}》吗？`}
+        description="本地音频文件也会一并删除，且不可恢复。"
+        error={deleteError}
+        loading={loading}
+        onConfirm={() => {
+          if (pendingDelete) remove(pendingDelete);
+        }}
+        onCancel={() => {
+          if (loading) return;
+          setPendingDelete(null);
+          setDeleteError('');
+        }}
+      />
     </div>
   );
 }

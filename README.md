@@ -15,6 +15,7 @@
 | 图标 | lucide-react |
 | 主题 | next-themes（跟随系统 / 手动切换） |
 | 校验 | Zod |
+| 测试 | Vitest 5 + Testing Library + jsdom |
 
 ## 快速开始
 
@@ -89,6 +90,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 - 分类与标签：新增、删除（删除分类时文章自动置为未分类）
 - 音乐管理：上传 MP3/WAV/OGG/FLAC（≤50MB）、设置默认播放、排序、删除（同步删除本地文件）
 - 站点设置：单列四段式布局（基本信息 / 品牌与背景 / 帖子默认封面 / 音乐播放），含站点名称、个人描述、关于这个站点（留空显示默认文案）、页脚版权文案、网站 Logo 上传（≤2MB，可恢复默认）、首页背景板上传（≤4MB，可拖拽调整显示位置，可移除恢复默认背景）、推荐位默认封面与最新文章默认封面（各 ≤4MB，可拖拽预览调整显示位置）、音乐自动播放开关与默认音量；底部为吸底保存条
+- 删除确认：文章、评论、友链、音乐、分类与标签的删除统一使用页内确认弹层（遮罩 / Esc / 自动聚焦），不使用原生 `window.confirm` / `window.alert`，规避内嵌浏览器弹出原生对话框时崩溃
 
 ## 数据库表
 
@@ -127,11 +129,12 @@ src/
 │   ├── api/                 # 认证（含 /api/auth/session）/ 评论 / 后台 / 阅读上报
 │   ├── icon.png             # 站点 favicon（Logo 居中裁方）
 │   └── globals.css          # 设计令牌、通栏工具类、波浪动画
-├── components/              # 布局、卡片、播放器、编辑器、管理组件
+├── components/              # 布局、卡片、播放器、编辑器、管理组件（__tests__ 下为组件单元测试）
 ├── db/                      # Drizzle schema 与 better-sqlite3 连接
 ├── lib/                     # 认证、查询、限流、工具
 └── proxy.ts                 # Next 16 Proxy，保护 /admin
 scripts/init-db.mjs          # SQLite 建表 + 索引 + 初始数据
+vitest.config.mts            # 单元测试配置（jsdom + Testing Library）
 public/music/                # 上传的音频文件
 data/blog.db                 # SQLite 数据库（已加入 .gitignore）
 ```
@@ -144,6 +147,7 @@ npm run build     # 生产构建（next build --webpack）
 npm run start     # 生产启动
 npm run db:init   # 建表 + 索引 + 初始化数据（幂等）
 npm run smoke     # 接口冒烟测试（需先启动 dev，共 23 项）
+npm test          # 组件单元测试（Vitest + Testing Library）
 ```
 
 > `better-sqlite3` 是原生模块，已在 `next.config.mjs` 中声明为 `serverExternalPackages`（交给 Node 直接加载、不参与打包）。当前开发环境下 Turbopack 复制外部模块时会生成不可用的 junction，因此 `dev` / `build` 显式使用 `--webpack`；在正常环境可自行去掉该参数。
@@ -163,6 +167,7 @@ npm run smoke     # 接口冒烟测试（需先启动 dev，共 23 项）
 - **数据一致性**：数据库层外键 + 应用层删除逻辑双保险。
 - **封面焦点**：位置以 `"x% y%"` 字符串存储，前端直接用 `object-position` 渲染；文章自带封面时用文章自己的 `cover_position`，无封面时才回退站点默认封面的位置。
 - **默认文案**：「关于这个站点」的默认内容定义在 `src/lib/utils.ts` 的 `DEFAULT_ABOUT_SITE`，数据库为空时前台用它兜底、后台输入框用它做占位提示（因此输入框默认是空的，无需手动清空）。
+- **删除确认**：破坏性操作统一走 `src/components/confirm-dialog.tsx` 的 `ConfirmDialog`（遮罩点击 / Esc / 自动聚焦确认按钮，错误文案显示在弹层内），不再使用 `window.confirm` / `window.alert`；IDE 等内嵌浏览器弹出原生对话框时会直接崩溃。新增删除入口请复用该组件，勿回退到原生对话框。
 - **缓存与无 Redis**：单实例个人博客，站点设置 / 分类标签 / 站点统计 / 文章列表走 `unstable_cache` + tag 失效；文章详情、关于我、友链是 `revalidate = 60` 的静态页，文章增删改时用 `revalidatePath` 立即失效；首页与文章列表因视图偏好 Cookie / `searchParams` 保持动态；限流仍在进程内完成，无需 Redis。
 
 ## 性能约定

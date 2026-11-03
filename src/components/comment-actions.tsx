@@ -4,12 +4,17 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 
 export function CommentActions({ id, status }: { id: number; status: 'pending' | 'approved' | 'rejected' }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   async function update(nextStatus: 'approved' | 'rejected' | 'pending') {
+    setError('');
     setLoading(true);
     try {
       const res = await fetch(`/api/admin/comments/${id}`, {
@@ -18,47 +23,80 @@ export function CommentActions({ id, status }: { id: number; status: 'pending' |
         body: JSON.stringify({ status: nextStatus }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        window.alert(data.error ?? '操作失败');
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? '操作失败');
         return;
       }
       router.refresh();
+    } catch {
+      setError('网络异常，请稍后再试');
     } finally {
       setLoading(false);
     }
   }
 
   async function remove() {
-    if (!window.confirm('确定删除这条评论吗？')) return;
+    setDeleteError('');
     setLoading(true);
     try {
       const res = await fetch(`/api/admin/comments/${id}`, { method: 'DELETE' });
       if (!res.ok) {
-        const data = await res.json();
-        window.alert(data.error ?? '删除失败');
+        const data = await res.json().catch(() => null);
+        setDeleteError(data?.error ?? '删除失败');
         return;
       }
+      setDeleteOpen(false);
       router.refresh();
+    } catch {
+      setDeleteError('网络异常，请稍后再试');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="flex items-center gap-1.5">
-      {status !== 'approved' && (
-        <Button variant="ghost" size="sm" onClick={() => update('approved')} disabled={loading} title="通过审核">
-          <Check className="h-3.5 w-3.5 text-emerald-600" /> 通过
+    <div className="flex flex-col items-end gap-1">
+      <div className="flex items-center gap-1.5">
+        {status !== 'approved' && (
+          <Button variant="ghost" size="sm" onClick={() => update('approved')} disabled={loading} title="通过审核">
+            <Check className="h-3.5 w-3.5 text-emerald-600" /> 通过
+          </Button>
+        )}
+        {status !== 'rejected' && (
+          <Button variant="ghost" size="sm" onClick={() => update('rejected')} disabled={loading} title="拒绝">
+            <X className="h-3.5 w-3.5 text-amber-600" /> 拒绝
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => {
+            setError('');
+            setDeleteError('');
+            setDeleteOpen(true);
+          }}
+          disabled={loading}
+          title="删除评论"
+          aria-label="删除评论"
+        >
+          <Trash2 className="h-4 w-4 text-red-500" />
         </Button>
-      )}
-      {status !== 'rejected' && (
-        <Button variant="ghost" size="sm" onClick={() => update('rejected')} disabled={loading} title="拒绝">
-          <X className="h-3.5 w-3.5 text-amber-600" /> 拒绝
-        </Button>
-      )}
-      <Button variant="ghost" size="icon" onClick={remove} disabled={loading} title="删除评论">
-        <Trash2 className="h-4 w-4 text-red-500" />
-      </Button>
+      </div>
+      {error && !deleteOpen && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="确定删除这条评论吗？"
+        description="删除后不可恢复，前台将不再展示该评论。"
+        error={deleteError}
+        loading={loading}
+        onConfirm={remove}
+        onCancel={() => {
+          if (loading) return;
+          setDeleteOpen(false);
+          setDeleteError('');
+        }}
+      />
     </div>
   );
 }
