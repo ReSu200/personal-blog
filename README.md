@@ -78,7 +78,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 - 登录失败限流：同一 IP 连续 5 次失败锁定 5 分钟
 - 深色 / 浅色主题切换（圆形扩散过渡动画）
 - RSS 订阅：`/rss.xml`
-- 左下角音乐播放器：自动播放默认歌曲、暂停 / 切换 / 进度 / 音量，按钮可拖拽移动，位置存入 Cookie 由服务端直出
+- 左下角音乐播放器：自动播放默认歌曲、暂停 / 切换 / 进度 / 音量，按钮可拖拽移动，位置存入 Cookie 并在客户端读取恢复
 
 ### 后台（`/admin`）
 
@@ -124,7 +124,7 @@ src/
 │   │   ├── about/           # 关于我
 │   │   └── rss.xml/         # RSS
 │   ├── admin/               # 后台（独立布局，中间件保护）
-│   ├── api/                 # 认证 / 评论 / 后台 / 音乐接口
+│   ├── api/                 # 认证（含 /api/auth/session）/ 评论 / 后台 / 阅读上报
 │   ├── icon.png             # 站点 favicon（Logo 居中裁方）
 │   └── globals.css          # 设计令牌、通栏工具类、波浪动画
 ├── components/              # 布局、卡片、播放器、编辑器、管理组件
@@ -143,7 +143,7 @@ npm run dev       # 开发模式（next dev --webpack）
 npm run build     # 生产构建（next build --webpack）
 npm run start     # 生产启动
 npm run db:init   # 建表 + 索引 + 初始化数据（幂等）
-npm run smoke     # 接口冒烟测试（需先启动 dev，共 24 项）
+npm run smoke     # 接口冒烟测试（需先启动 dev，共 23 项）
 ```
 
 > `better-sqlite3` 是原生模块，已在 `next.config.mjs` 中声明为 `serverExternalPackages`（交给 Node 直接加载、不参与打包）。当前开发环境下 Turbopack 复制外部模块时会生成不可用的 junction，因此 `dev` / `build` 显式使用 `--webpack`；在正常环境可自行去掉该参数。
@@ -157,22 +157,23 @@ npm run smoke     # 接口冒烟测试（需先启动 dev，共 24 项）
 - **MySQL → SQLite 字段映射**：`DATETIME` → `INTEGER`（Unix 秒）、`bigint` → `INTEGER`、`tinyint(1)` → `INTEGER`（0/1）、`decimal` → `REAL`、`enum` → `TEXT` + `CHECK`；主键保留原 id，关联表（`post_tags`、`comments.parent_id`）因此无需重算。
 - **验证码**：`/api/auth/captcha` 返回随机 4 位字符的 SVG（含旋转、干扰线、噪点），答案经 HMAC 签名后写入 HttpOnly Cookie，登录时服务端校验并立即失效。
 - **头像**：内置 4 款头像图片（`public/avatars/avatar-1.png` ~ `avatar-4.png`，标识 `avatar-1` ~ `avatar-4`），注册时默认分配第一款，个人中心可切换或上传自定义图片。
-- **登录态同步**：登录、退出、保存资料后使用整页跳转，保证顶部账号区、评论头像等立即更新，无需手动刷新。
+- **登录态同步**：登录态由 `GET /api/auth/session` 在客户端获取，顶部账号区与评论区不再依赖服务端 cookies；保存资料后用 `router.refresh()` 刷新服务端组件，退出登录仍是整页跳转。
 - **评论安全**：服务端剥离 HTML 标签，前端以纯文本渲染（`whitespace-pre-wrap`），从根源避免 XSS。
 - **自动播放**：先尝试有声播放，被浏览器策略拦截时降级为静音播放，并弹出「点击开启音乐」提示；用户首次点击后恢复音量。
 - **数据一致性**：数据库层外键 + 应用层删除逻辑双保险。
 - **封面焦点**：位置以 `"x% y%"` 字符串存储，前端直接用 `object-position` 渲染；文章自带封面时用文章自己的 `cover_position`，无封面时才回退站点默认封面的位置。
 - **默认文案**：「关于这个站点」的默认内容定义在 `src/lib/utils.ts` 的 `DEFAULT_ABOUT_SITE`，数据库为空时前台用它兜底、后台输入框用它做占位提示（因此输入框默认是空的，无需手动清空）。
-- **无 Redis**：单实例个人博客，使用 Next.js 动态渲染与进程内限流即可。
+- **缓存与无 Redis**：单实例个人博客，站点设置 / 分类标签 / 站点统计 / 文章列表走 `unstable_cache` + tag 失效；文章详情、关于我、友链是 `revalidate = 60` 的静态页，文章增删改时用 `revalidatePath` 立即失效；首页与文章列表因视图偏好 Cookie / `searchParams` 保持动态；限流仍在进程内完成，无需 Redis。
 
 ## 性能约定
 
 改动相关代码时请保持以下约束，它们对应实测有效的优化项：
 
 - **请求内去重**：`getSettings` / `getSession` / `getPostBySlug` / 分类 / 标签 / 统计均用 `React.cache` 包裹，布局与页面各调一次也只查一次库。新增跨组件共用的查询请照此处理。
-- **并行取数**：同一页面内互不依赖的查询走 `Promise.all`（如 `listPosts` 的列表与 `count()`）；纯副作用写入（如阅读数自增）并入并行，不要串行挡在渲染路径前。
+- **并行取数**：同一页面内互不依赖的查询走 `Promise.all`（如 `listPosts` 的列表与 `count()`）；阅读数不写进渲染路径，改由客户端 `POST /api/posts/[id]/view` 上报。
 - **Cookie 常量必须放在服务端安全的模块**：从 `'use client'` 模块导入任何非组件导出，在 Server Component 中会变成 client reference 代理对象（`typeof 'object'`），`VIEW_COOKIE` / `PLAYER_POSITION_COOKIE` 因此放在 `src/lib/utils.ts`。
-- **首屏偏好用 Cookie + SSR 直出**（列表 / 九宫格视图、播放器拖拽位置），避免先渲染默认值再跳变。
+- **首屏偏好**：列表 / 九宫格视图仍用 Cookie + SSR 直出，避免先渲染默认值再跳变；播放器拖拽位置改由客户端读取 Cookie 恢复（服务端布局不再读 cookies，否则整条路由会退化为动态渲染）。
+- **静态页面写后失效**：`/posts/[slug]`、`/about`、`/links` 为 `revalidate = 60` 的静态页，内容写操作必须调用 `revalidatePath`，否则最长滞后 60s 才更新。
 - **图片**：首屏 LCP 图用 `fetchPriority="high"`，首屏以下封面一律 `loading="lazy" decoding="async"`。
 - **高频渲染**：播放器收起时不更新播放进度，阅读进度条直接写 `transform: scaleX()` 并用 `ResizeObserver` 代替逐帧测量。
 - **格式化实例**：`Intl.DateTimeFormat` 在 `src/lib/utils.ts` 模块级共享，不要在渲染函数里新建。
